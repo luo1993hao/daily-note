@@ -1,0 +1,106 @@
+
+# MYSQL数据库同步流程  
+
+**本次流程中11为主节点，12为从节点**
+# master节点
+## 1.修改配置mysql主配置文件
+```
+vim /usr/my.cnf
+```
+
+```
+log-bin=mysql-bin 	#启动二进制日志系统
+binlog-do-db=test 	#二进制需要同步的数据库名,如果需要同步多个库,例如要再同步 westos
+		         库,再添加一行“binlog-do-db=westos”,以此类推
+server-id=1       	#必须为 1 到 232–1 之间的一个正整数值
+binlog-ignore-db=mysql	 #禁止同步 mysql 数据库
+```
+## 2.给slave节点赋权
+```
+GRANT REPLICATION SLAVE ON *.* TO westos@'192.168.0.12'IDENTIFIED BY 'westos';
+```
+
+# slave节点
+```bash
+mysql> change master to master_host='192.168.0.11', master_user='westos',
+master_password='westos', master_log_file='mysql-bin.000001', master_log_pos=106;
+
+mysql> start slave;
+mysql> show slave status\G;
+```
+
+## 3.添加一个需要同步的新库
+### 1. 从服务上，停掉slave数据库。
+```
+stop slave;
+```
+### 2. 主服务器上，导出新数据库。
+```
+mysqldump -uroot -p --master-data 
+--single-transaction -R 
+--databases [newdb] > newdb.sql
+```
+### 3. 修改主服务器my.cnf文件
+
+主服务器上，修改my.cnf文件，添加新库到binlog-do-db
+参数，重启mysql。
+```
+/etc/init.d/mysql restart
+```
+### 4. 查找当前的日志文件以及位置
+
+在导出的newdb.sql里面查找当前的日志文件以及位置（change master to …)
+然后让slave服务器执行到这个位置。
+```
+start slave until
+MASTER_LOG_FILE="mysql-bin.000001",
+MASTER_LOG_POS=1222220;
+```
+```
+stop slave
+```
+其中MASTER_LOG_FILE以及MASTER_LOG_POS在导出的数据库newdb.sql顶部位置查找。
+
+### 5. 导入新库到从服务器上。
+
+mysql < newdb.sql
+
+### 6. 启动从服务器
+```
+start slave
+```
+
+数据库复制   一个时间段：
+```
+mysqlbinlog  --start-datetime='2016-10-18 15:26:33' 
+mysql-bin.000009 | mysql -pbuzhidao
+```
+### 7.报错
+Slave_SQL_Running: No
+1.程序可能在slave上进行了写操作
+2.也可能是slave机器重起后，事务回滚造成的.
+
+一般是事务回滚造成的：
+解决办法：
+```
+mysql> slave stop;
+mysql> set GLOBAL SQL_SLAVE_SKIP_COUNTER=1;
+mysql> slave start;
+```
+解决办法二、
+首先停掉Slave服务：slave stop
+到主服务器上查看主机状态：
+记录File和Position对应的值
+进入master
+mysql> show master status;
+
+然后到slave服务器上执行手动同步：
+```
+mysql> change master to
+> master_host='master_ip',
+> master_user='user',
+> master_password='pwd',
+> master_port=3306,
+> master_log_file=localhost-bin.000094',
+> master_log_pos=33622483 ;
+```
