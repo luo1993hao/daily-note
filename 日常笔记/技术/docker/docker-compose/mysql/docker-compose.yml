@@ -1,0 +1,29 @@
+
+version: '3'
+services:
+  db:
+    image: mysql:5.6
+    restart: always
+    container_name: mysql
+    volumes:
+    - data:/var/lib/mysql
+    ports:
+    - '3306:3306'
+    environment:
+    - MYSQL_ROOT_PASSWORD=Lng.123456
+    command: [
+      "--log-bin=mysql-bin",
+      "--server-id=1",
+      "--slow-query-log=true",
+      "--slow-query-log-file=/var/lib/mysql/slow.log",
+      "--long-query-time=1",
+    ]
+
+volumes:
+  data:
+
+
+
+补充说明：更多command使用
+  docker run -it --rm mysql:tag --verbose --help 查看
+
