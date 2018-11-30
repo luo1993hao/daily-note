@@ -38,7 +38,7 @@ Using temporary：表示MySQL需要使用临时表来存储结果集，常见于
 
 Using filesort：MySQL中无法利用索引完成的排序操作称为“文件排序”
 
-Using join buffer：改值强调了在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。如果出现了这个值，那应该注意，根据查询的具体情况可能需要添加索引来改进能。
+Using join buffer：该值强调了在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。如果出现了这个值，那应该注意，根据查询的具体情况可能需要添加索引来改进能。
 
 Impossible where：这个值强调了where语句会导致没有符合条件的行。
 
@@ -50,3 +50,19 @@ Select tables optimized away：这个值意味着仅通过使用索引，优化�
 - EXPLAIN不能显示MySQL在执行查询时所作的优化工作
 - 部分统计信息是估算的，并非精确值
 - EXPALIN只能解释SELECT操作，其他操作要重写为SELECT后查看执行计划。
+
+
+### EXPLAIN 实战总结
+
+#### extra
+- Using join buffer   在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。
+  - (Block Nested Loop) 
+  - 
+- Using temporary
+  - 对驱动表可以直接排序，对非驱动表（的字段排序）需要对循环查询的合并结果（临时表）进行排序（Important!）
+- Using filesort 
+    - 官方解释：MySQL must do an extra pass to find out how to retrieve the rows in sorted order. The sort is done by going through all rows according to the join type and storing the sort key and pointer to the row for all rows that match the WHERE clause.
+    - 一般出现在order by 排序字段没有加索引。mysql会进行一次额外的排序
+    - 排序大小：max_length_for_sort_data，如果查询的数据量大于这个值，即便加上索引，还是会进行filesort
+ ### left join/join
+ 

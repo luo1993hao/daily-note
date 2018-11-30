@@ -22,3 +22,4 @@ vim /etc/ansible/ansible.cfg
 ```
 ansible-playbook -i inventory/[qa/prod] ./deploy.yml -e tag=$ver -e env=[qa/pro]
 ```
+
