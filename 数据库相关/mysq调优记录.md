@@ -56,13 +56,37 @@ Select tables optimized away：这个值意味着仅通过使用索引，优化�
 
 #### extra
 - Using join buffer   在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。
-  - (Block Nested Loop) 
-  - 
+  - (Block Nested Loop) 好比java的两层for循环。效率差
+  - Block Nested-Loop Join(BNL)
 - Using temporary
   - 对驱动表可以直接排序，对非驱动表（的字段排序）需要对循环查询的合并结果（临时表）进行排序（Important!）
 - Using filesort 
     - 官方解释：MySQL must do an extra pass to find out how to retrieve the rows in sorted order. The sort is done by going through all rows according to the join type and storing the sort key and pointer to the row for all rows that match the WHERE clause.
     - 一般出现在order by 排序字段没有加索引。mysql会进行一次额外的排序
     - 排序大小：max_length_for_sort_data，如果查询的数据量大于这个值，即便加上索引，还是会进行filesort
- ### left join/join
+    - 超过max_length_for_sort_data的设置，导致无法使用单路排序算法，只能用双路排序算法。 
+      超过sort_buffer_size的设置，超出后会创建tmp文件进行合并，导致多次IO
+- Using where Using index ：
+-  Using index condition：查询的列不全在索引中
+ #### left join/join
+ #### order by 
+ 1. 利用索引的有序性获取有序数据
+ 2. 利用内存/磁盘文件排序获取结果
+    - 双路排序 从磁盘读取排序字段，在buffer进行排序，再从磁盘取其他字段
+    - 单路排序 从磁盘中查询所需的列，按照order by列在buffer中对它们进行排序，然后扫描排序后的列表进行输出。它的效率更高一些，避免了第二次读取数据，并且把随机I/O变成了顺序I/O，但是会使用更多的空间，因为它把每一行都保存在内存中了
+ ##### 优化方式
+ 1. order by字段加索引（最左原则）
+ 2. 返回数据量过大也会不使用索引
+ 3. 增大 sort_buffer_size 参数设置
+ 4. 排序非驱动表不会走索引
  
+ 
+ #### count性能总结
+ 
+ count慢的原因：
+ 
+ innodb为聚簇索引同时支持事物，其在count指令实现上采用实时统计方式。在无可用的二级索引情况下，执行count会使MySQL扫描全表数据，当数据中存在大字段或字段较多时候，其效率非常低下（每个页只能包含较少的数据条数，需要访问的物理页较多）。
+ 
+ 解决办法：
+ 
+ 在表包含大字段或字段较多情况下，若存在count统计需求，可建一个较小字段的二级索引（例 char(1) , tinyint )来进行count统计加速
