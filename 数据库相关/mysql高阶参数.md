@@ -28,3 +28,12 @@
  1. Sort_Buffer_Size 是一个connection级参数,在每个connection第一次需要使用这个buffer的时候,一次性分配设置的内存。
  2. Sort_Buffer_Size 并不是越大越好,由于是connection级的参数,过大的设置+高并发可能会耗尽系统内存资源。
  3. 据说Sort_Buffer_Size 超过2M的时候,就会使用mmap() 而不是 malloc() 来进行内存分配,导致效率降低。
+ ### key_buffer_size
+ 
+key_buffer_size是对MyISAM表性能影响最大的一个参数。key_buffer_size指定索引缓冲区的大小，它决定索引处理的速度，尤其是索引读的速度
+可以检查状态值Key_read_requests和Key_reads，即可知道key_buffer_size设置是否合理。比例key_reads / key_read_requests应该尽可能的低，至少是1:100，1:1000更好
+### table_cache
+与max_connections 相关。
+
+table_cache指示表高速缓存的大小。当Mysql访问一个表时，如果在Mysql表缓冲区中还有空间，那么这个表就被打开并放入表缓冲区，这样做的好处是可以更快速地访问表中的内容。一般来说，可以通过查看数据库运行峰值时间的状态值Open_tables和Opened_tables，用以判断是否需要增加table_cache的值，
+如果Opened_tables远大于Open_tables，并且Open_tables很接近table_cache，那么就说明table_cache偏小
