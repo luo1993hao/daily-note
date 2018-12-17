@@ -37,3 +37,7 @@ key_buffer_size是对MyISAM表性能影响最大的一个参数。key_buffer_siz
 
 table_cache指示表高速缓存的大小。当Mysql访问一个表时，如果在Mysql表缓冲区中还有空间，那么这个表就被打开并放入表缓冲区，这样做的好处是可以更快速地访问表中的内容。一般来说，可以通过查看数据库运行峰值时间的状态值Open_tables和Opened_tables，用以判断是否需要增加table_cache的值，
 如果Opened_tables远大于Open_tables，并且Open_tables很接近table_cache，那么就说明table_cache偏小
+
+###tmp_table_size
+内存中临时表的最大值。不负责限制MEMORY/HEAP表最大容量，如果执行SQL产生临时表超过 tmp_table_size/max_heap_table_size，则会产生基于磁盘的MyISAM表
+一般查询如果group by order by 的语句。调高此参数会有用

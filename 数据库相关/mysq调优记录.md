@@ -1,3 +1,9 @@
+### cpu过高
+- 满查询日志
+- key_buffer_size、table_cache、innodb_buffer_pool_size、innodb_log_file_size,tmp_table_size,max_heap_table_size(这些参数在高阶参数中详解)
+- show processlist
+
+
 ##### 剖析mysql查询
 1. 捕获mysql的查询到日志文件中
 2. 日志分析工具url
