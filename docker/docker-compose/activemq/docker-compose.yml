@@ -1,0 +1,12 @@
+version: '3'
+services:
+  activemq:
+    image: webcenter/activemq
+    container_name: activemq
+    volumes:
+    - ./data:/data
+    - ./log:/var/log/activemq
+    ports:
+    - '8161:8161'
+    - '61616:61616'
+    - '61613:61613'
