@@ -51,8 +51,13 @@ Loaded  Bytes  Unloaded  Bytes     Time
 ```
 - gcnewcapacity -gcnew基本相同，关注新生代每个区域使用的最大，最小空间
 - gcold/gcoldcapacity
-
-
+### jmap/jhat
+ - jmap
+   - -dump:[live/all]format=b,file=<filename>:生成heap dump,配合jhat分析。
+   - heap：打印jvm heap的情况
+   --histo：打印jvm heap的直方图。其输出信息包括类名，对象数量，对象占用大小。
+### jsrack
+线程跟踪工具，用于打印指定Java进程的线程堆栈信息。一般用于解决cpu过高问题
 ### 问题以及回答
 1. 什么情况下执行fgc
   - old空间不足（20%），perm空间不足
