@@ -31,4 +31,6 @@ Example内有一个成员叫oredCriteria,是Criteria的集合,就想其名字所
 
 静态与动态的区别在于aop生成的时机不同，相对来说AspectJ的静态代理方式具有更好的性能，但是AspectJ需要特定的编译器进行处理，而Spring AOP则无需特定的编译器处理。
 ### spring 中的线程安全
-
+- 无状态的bean,线程安全。
+- 在spring中使用threadLocal来装载全局变量。
+- 尽量使用单例，如果作用域作用为prototype
