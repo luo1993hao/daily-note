@@ -41,8 +41,18 @@
    - delete:删除时间版本号=当前版本号
    - update:可以理解为先删后增，2个独立的动作。
    - select：1.当前版本号>创建版本号&&当前版本号<删除版本号
+ ### 存储过程
+ 
+     创建存储过程的时候可以指定 SQL SECURITY属性，设置为 DEFINER 或者INVOKER，用来奉告mysql在执行存储过程的时候，，是以DEFINER用户的权限来执行，还是以调用者的权限来执行。
+ 
+    默认情况下，使用DEFINER方式，此时调用存储过程的用户必须有存储过程的EXECUTE权限，并且DEFINER指定的用户必须是在mysql.user表中存在的用户。
+ 
+    DEFINER模式下，默认DEFINER=CURRENT_USER，在存储过程执行时，mysql会检查DEFINER定义的用户'user_name'@'host_name'的权限；
+ 
+    INVOKER模式下，在存储过程执行时，会检查存储过程调用者的权限。
  
  
+ 阿里开发手册：禁止使用存储过程，存储过程难以调试和扩展，更没有移植性。
  
  ### 几个原则
  - 尽量少使用select * 
