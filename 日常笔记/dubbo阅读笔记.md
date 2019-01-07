@@ -85,9 +85,30 @@ assert(status.equals("OK"));
 回调函数的通俗解释：
 
 - 你到一个商店买东西，刚好你要的东西没有货，于是你在店员那里留下了你的电话，过了几天店里有货了，店员就打了你的电话，然后你接到电话后就到店里去取了货。在这个例子里，你的电话号码就叫**回调函数**，你把电话留给店员就叫**登记回调函数**，店里后来有货了叫做触发了回调关联的事件，店员给你打电话叫**做调用回调函数**，你到店里去取货叫做**响应回调事件**
+## 支持的协议
+- dubbo(缺省)
+  - 单一长链接和nio异步通讯，适合小数据量大并发的服务调用，不适合传送大数据量
+- rmi:
+- hession:传入传出参数数据包较大，提供者比消费者个数多，提供者压力较大，可传文件
+- HTTP:基于 HTTP 表单的远程调用协议，采用 Spring 的 HttpInvoker 实现,需同时给应用程序和浏览器 JS 使用的服务
+- WebService:系统集成，跨语言调用
+- thrift:
+- memcached ,redis
+## 注册中心
+- Multicast 注册中心不需要启动任何中心节点，只要广播地址一样，就可以互相发现
+组播受网络结构限制，只适合小规模应用或开发阶段使用
+- zookeeper
+- Redis
+## 容错策略
+- Failover Cluster（缺省）失败自动切换
+- Failfast Cluster：快速失败，只发起一次调用，失败立即报错，一般用于非幂等操作
+- Failsafe Cluster：失败安全，出现异常时，直接忽略
+- Failback Cluster：
+- Forking Cluster：并行调用，只要有一个成功返回。实时性高，浪费资源
+- Broadcast Cluster：广播，逐一调用
+## 负载均衡
+- Random LoadBalance：随机，按权重设置随机概率。
+- RoundRobin LoadBalance：轮询，存在慢的提供者累积请求的问题
+- LeastActive LoadBalance：最少活跃调用数，
+- ConsistentHash LoadBalance ：一致性Hash，相同参数的请求总是发到同一提供者。
 
-作者：常溪玲
-链接：https://www.zhihu.com/question/19801131/answer/13005983
-来源：知乎
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
-7. pdf 72页，**功能正交分解**？
