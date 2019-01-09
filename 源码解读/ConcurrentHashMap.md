@@ -1,4 +1,16 @@
-### get
+## 核心属性
+ ```
+ static final int MOVED     = -1; // 表示正在转移（tansfer）
+ static final int TREEBIN   = -2; // 表示已经转换成树
+ /**
+      * 用来控制表初始化和扩容的，默认值为0，当在初始化的时候指定了大小，这会将这个大小保存在sizeCtl中，大小为数组的0.75
+      * 当为负的时候，说明表正在初始化或扩张，
+      *     -1表示初始化（initTable中）
+      *     -(1+n) n:表示活动的扩张线程
+      */
+     private transient volatile int sizeCtl
+```
+## get
 步骤：
 1. 首先计算hash值，定位到该table索引位置，如果是首节点符合就返回
 2. 如果遇到扩容的时候，会调用标志正在扩容节点ForwardingNode的find方法，查找该节点，匹配就返回
@@ -120,8 +132,34 @@ public V get(Object key) {
                     break;
                 }
             }
-        }
+        
         addCount(1L, binCount);    //计数
         return null;
     }
 ```
+#### 核心方法（结合代码）
+核心方法还是在put方法中所涉及到的步骤。
+- initTable
+  * 初始化数组table，
+  * 如果sizeCtl小于0，说明别的数组正在进行初始化，则让出执行权
+  * 如果sizeCtl大于0的话，则初始化一个大小为sizeCtl的数组
+  * 否则的话初始化一个默认大小(16)的数组
+  * 然后设置sizeCtl的值为数组长度的3/4
+- helpTransfer
+- tryPresize
+     * 扩容表为指可以容纳指定个数的大小（总是2的N次方）
+     * 假设原来的数组长度为16，则在调用tryPresize的时候，size参数的值为16<<1(32)，此时sizeCtl的值为12
+     * 计算出来c的值为64,则要扩容到sizeCtl≥为止
+     * 在tryPresize方法中，并没有加锁，允许多个线程进入，如果数组正在扩张，则当前线程也去帮助扩容
+- treeifyBin
+  - 当数组长度小于64的时候，扩张数组长度一倍，否则的话把链表转为树.
+- transfer(这个是最核心)
+   - 把数组中的节点复制到新的数组的相同位置，或者移动到扩张部分的相同位置
+   - 如果复制的目标nextTab为null的话，则初始化一个table两倍长的nextTab
+   - 创建一个fwd节点，这个是用来控制并发的，当一个节点为空或已经被转移之后，就设置为fwd节点
+   - 扩容的时候会一直遍历，知道复制完所有节点，每处理一个节点的时候会在链表的头部设置一个fwd节点，这样其他线程就会跳过他
+- cas相关
+  - tabAt
+  - casTabAt
+  - setTabAt
+  - 这三类使用了unSafe方法，通过直接操作内存的方式来保证并发处理的安全性，使用的是硬件的安全机制
