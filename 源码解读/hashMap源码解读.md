@@ -20,6 +20,8 @@ public class HashMap<K,V>
 4. hashMap是一个链表散列
 5. hash冲突？ 链地址法。数据家链表。
 #### 方法
+
+![](https://i.loli.net/2019/01/08/5c33f0d1efd65.png)
 ```
    public V put(K key, V value) {
  2     // 对key的hashCode()做hash
