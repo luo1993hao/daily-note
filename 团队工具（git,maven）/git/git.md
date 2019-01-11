@@ -88,6 +88,37 @@ git add <filename>
 ```
 git diff <source_branch> <target_branch>
 ```
+### 建立跳板机步骤
+
+### 本地与生产git步骤 
+
+1. 跳板机建立新仓库
+
+```
+ git init --bare gitName
+ ```
+ 2. 本地建立remote 源到跳板机
+ ```
+ 
+ git remote add originName（唯一） 跳板机git路径
+ 例如：
+  git remote add task ssh://root@111.1.31.174:18098/root/lng/lng-task.git 
+ ```
+ 3. 生产新建git目录
+  ```
+  git init
+  ```
+ 4. 建立跳板机的remote源
+ ```
+ # origin为git pull默认remote源名称，建议使用
+ git remote add origin 路径
+ ```
+ 5.指定当前工作目录工作分支，跟远程的仓库，分支之间的链接关系
+ 设置master对应远程仓库的master分支。
+ ```
+ git branch --set-upstream master origin/master
+ ```
+ 
 #### 汇总
 ```
 $ git merge --squash # 合并代码
