@@ -1,4 +1,39 @@
+##AQS
+一句话概括：多线程访问共享资源的同步器框架。
+![](https://i.loli.net/2019/01/16/5c3f1f5f4f515.png)
+#### 原理
 
+![](https://i.loli.net/2019/01/16/5c3f20e26f55f.png)
+**如果被请求的资源空闲，则当前请求资源的线程设置为有效的工作线程，并且将共享资源设定为锁定状态。如果被占用，就需要一套线程阻塞，等待的机制，这个机制是使用队列锁实现，即暂时获取不到锁的线程被加入队列中**
+### 核心属性以及方法
+```
+private volatile int state;//共享变量，使用volatile修饰保证线程可见性
+isHeldExclusively()//该线程是否正在独占资源。只有用到condition才需要去实现它。
+tryAcquire(int)//独占方式。尝试获取资源，成功则返回true，失败则返回false。
+tryRelease(int)//独占方式。尝试释放资源，成功则返回true，失败则返回false。
+tryAcquireShared(int)//共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。
+tryReleaseShared(int)//共享方式。尝试释放资源，成功则返回true，失败则返回false。
+```
+### 资源共享方式
+
+- Exclusive（独占）：只有一个线程能执行，如ReentrantLock。又可分为公平锁和非公平锁：
+  - 公平锁：按照线程在队列中的排队顺序，先到者先拿到锁
+  - 非公平锁：当线程要获取锁时，无视队列顺序直接去抢锁，谁抢到就是谁的
+- Share（共享）：多个线程可同时执行
+
+不同的自定义同步器争用共享资源的方式也不同。
+
+自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可（一般来说，自定义同步器要么是独占方法，要么是共享方式，他们也只需实现tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。但AQS也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。），
+
+至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS已经在上层已经帮我们实现好了。
+
+#### 常见子类
+- ReentrantLock
+- Semaphore
+- ReentrantReadWriteLock
+- SynchronousQueue
+- CountDownLatch
+- CyclicBarrier
 #### CountDownLatch
 CountDownLatch是一个同步工具类，它允许一个或多个线程一直等待，直到其他线程的操作执行完后再执行
 
