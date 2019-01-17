@@ -34,3 +34,41 @@ Example内有一个成员叫oredCriteria,是Criteria的集合,就想其名字所
 - 无状态的bean,线程安全。
 - 在spring中使用threadLocal来装载全局变量。
 - 尽量使用单例，如果作用域作用为prototype
+
+
+### 如何自己实现一个简单的ioc与aop
+#### ioc
+思路：
+1. 加载xml文件，遍历标签
+2. 找到标签对应的类，并创建bean
+3. 将标签属性填充到bean中
+3. 将bean注册到容器当中
+ 
+ 所使用的技术只包括xml解析与反射即可
+#### aop
+
+核心思路就是产生一个代理对象，代理对象实现的内容=普通对象逻辑+增强逻辑，对于代理对象的生成可以使用jdk或者cglib
+- jdk
+```
+    public static Object newProxyInstance(final Object target,final Aop aop)
+    {
+        // 生成代理对象的方法
+        return Proxy.newProxyInstance(
+                target.getClass().getClassLoader(),
+                target.getClass().getInterfaces(),
+                new InvocationHandler()
+                {
+
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+                    {
+                        aop.begin();// 关注点代码
+                        Object result = method.invoke(target, args);// 执行目标对象的方法
+                        aop.end();// 关注点代码
+                        return result;
+                    }
+                });
+    }
+```
+- cglib
+  - 继承即可AspectProxy
