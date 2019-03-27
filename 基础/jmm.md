@@ -26,3 +26,4 @@ https://github.com/FoxxMD/intellij-jvm-options-explained
 #### g1
 - G1 GC由Young Generation和Old Generation组成。G1将Java堆空间分割成了若干个Region，即年轻代/老年代是一系列Region的集合，这就意味着在分配空间时不需要一个连续的内存区间，即不需要在JVM启动时决定哪些Region属于老年代，哪些属于年轻代
 - G1年轻代收集器是并行Stop-the-world收集器，和其他的HotSpot GC一样，当一个年轻代GC发生时，整个年轻代被回收。G1的老年代收集器有所不同，它在老年代不需要整个老年代回收，只有一部分Region被调用。
+- test 
