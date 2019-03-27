@@ -1,0 +1,72 @@
+### Spring Cloud Eureka
+- 服务治理功能
+  - 服务注册中心（单节点，高可用）
+  - 服务提供者
+  - 服务消费者
+  - Region
+    - Zone
+- 配置
+  - 客户端配置
+  - Eureka客户端的配置主要分为以下两个方面。
+    -  服务注册相关的配置信息， 包括服务注册中心的地址、 服务获取的间隔时间、 可用 区域等。
+     -  服务实例相关的配置信息， 包括服务实例的名称、IP地址、 端口号、 健康检查路径  
+  - 服务注册类配置
+    - 指定注册中心 
+    - 其他配置：EurekaClient一 ConfigBean
+  - 服务实例类配置
+    - 实例名配置
+    - 端点配置
+    - 健康检测
+    - 其他配置：EurekainstanceConfigBean
+### Spring cloud Ribbon
+- 使用方式
+  - 服务提供者只需要启动多个服务实例并注册到一个注册中心或是多个相关联的服务 注册中心。
+  - 服务消费者直接通过调用被@LoadBalanced 注解修饰过的 RestTemplate 来实现面 向服务的接口调用。
+- RestTemplate
+  - 对象会使用 Ribbon 的自动化配置， 同时通过配 置 @LoadBalanced 还能够开启客户端负载均衡
+  - get
+  - post
+  - put
+  - delete
+- 负载均衡策略
+  - Random Rule
+  - RoundRobinRule：线性轮询
+  - RetryRule
+  - WeightedResponseTimeRule
+    - 实例运行情况计算权重
+  - AvailabilityFilteringRule:先过滤清单，再轮询选择
+- 自动化配置
+  - IClientConfig:ribbon客户端配置
+  - IRule: Ribbon 的负载均衡策略
+  - IPing:Ribbon的实例检查策略,默认所有实例都是可用的
+  - ServerList<Server>: 服务实例清单的维护机制
+  - ServerListFilter<Server>: 服务实例清单过滤机制 
+  - ILoadBalancer: 负载均衡器
+- 参数配置
+  - 全局配置
+  - 客户端配置
+  - CommonClientConfigKey
+### Spring cloud Hystrix
+- 服务容错保护
+- HystrixCommand
+  - 单个返回结果
+  - execute(),同步，错误抛异常
+- HystrixObservableCommand
+  - 多个操作结果
+  - observe(),Hot Observable。
+    - 它不论 ” 事件源 ” 是否有 “ 订阅者 ”， 都会在创建后对事件 进行发布， 所以对于Hot Observable的每一个“订阅者” 都有可能是从“事件源” 的中途 开始的， 并可能只是看到了整个操作的局部过程。
+  - toObservable(),Cold Observable。
+    - 在没有“订阅者” 的 时候并不会发布事件， 而是进行等待， 直到有 “ 订阅者 ” 之后才发布事件， 所以对于 Cold Observable 的订阅者， 它可以保证从一 开始看到整个操作的全部过程
+- 服务降级
+  - 重载 getFallback ()方法
+  - 注解实现服务降级只需要使用@HystrixCommand 中的 fallbackMethod 参数来指定具体的服务降级实现方法
+- 请求缓存
+  -重载 getCacheKey()
+- 请求合并
+- 属性详解
+   - 配置级别
+     - 全局默认值
+     - 全局配置属性
+     - 实例默认值
+     - 实例配置属性
+### Spring cloud Feign
