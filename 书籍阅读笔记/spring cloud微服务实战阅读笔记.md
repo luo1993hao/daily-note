@@ -94,3 +94,51 @@
  - 路径匹配
   - 匹配到第一个后就返回，取决于保存顺序（yaml文件）
  - 本地跳转
+ 
+ ### Spring cloud config
+ 用来为分布式系统中的 基础设施和微服务应用提供集中化的外部配置支持
+ -  服务端
+   - 分布式配置中心，独立，为客户端提供配置信息，加密，解密等接口
+ - 客户端
+ 
+ - 基础要素
+   - 远程git仓库：存储配置文件
+   - 服务端：指定所连接git仓库位置，以及账号密码
+   - 本地git仓库：远程->本地->服务端 ，如果远程不可用，直接返回本地
+   - 客户端：指定服务端地址
+   ![](https://i.loli.net/2019/03/28/5c9c344f4e57a.png)
+   
+   - 高可用
+   - 失败快速相应
+   - 动态刷新配置
+   
+   ### Spring cloud Bus
+   
+   实现了一些消息总线中的常用功能， 比如， 配合 Spring Cloud Config 实现微服务应用配置信息的动态更新等
+   - kafka,RabbitMQ
+   ![](https://i.loli.net/2019/03/28/5c9c6f7c3f459.png)
+   
+   ### Spring cloud Stream
+    Spring Cloud Stream 本质上就是整合了 Spring Boot 和 Spring Integration, 实现了一套轻量级的消息驱动的微服务框架
+    - 目前只支持RabbitMQ,kafka
+    - @EnableBinding, 该注解用来指定一个或多个定义了@input或@Output注解 的接口， 以此实现对消息通道( Channel) 的绑定。
+    - @StreamListener
+    - 对于每一 个Spring CloudStream的应用程序来说， 它不需要知晓消息中间件 的通信细节， 它只需知道Binder 对应程序提供的抽象概念来使用消息中间件来实现业务 逻辑即可， 
+    - 结构图
+    ![](https://i.loli.net/2019/03/28/5c9c723b1a4a7.png)
+    - 绑定器
+     - 实现应用程序与消息中间件的隔离
+    - 发布-订阅模式
+    - 消费组 通过分组，避免消息重复消费
+    - todo，后续功能
+  ### Spring cloud Sleuth 
+  服务跟踪
+  - 基本元素
+    - TraceID, 它用来标识一条请求链路。 一条请求链路中包含一个TraceID
+    - SpanID, 它表示一个基本的工作单元
+    - Sampled: 是否被抽样输出的标志， 1 表示需要被输出 ， 0 表示不需要被输出 。
+       - 通过 Sampler 接口
+       - 可以配置百分比
+  - 配合ELK使用
+    
+    
