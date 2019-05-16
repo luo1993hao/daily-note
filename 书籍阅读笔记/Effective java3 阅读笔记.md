@@ -1,3 +1,24 @@
+### 对象
+- 用静态工厂方法代替构造器
+  - 可以返回原对象任何子类
+  - 有名字
+  - 对于同时提供了静态工厂方法和构造器的不可变类，优先使用静态工厂
+- 遇到多个构造器参数时考虑使用构造器
+- 用私有构造器或者枚举类型强化Singleton属性
+- 通过私有构造器强化不可实力化的能力
+ ```
+ public class Collections {
+     // Suppresses default constructor, ensuring non-instantiability.
+     private Collections() {
+     }
+```
+- 优先考虑依赖注入来引用资源
+- 避免创建不必要的对象
+  - 只要类是自己管理内存的，程序员就应该警惕内存泄漏问题。
+  - 小心缓存
+  - 内存泄漏的第三个常见来源是监昕器和其他回调 
+- 避免使用终结方法和清除方法
+- try-witch-resources忧于try-finally
 ### 类和接口
 - 使类和成员的可访问性最小化
   - 公有类的实力域不能公有
