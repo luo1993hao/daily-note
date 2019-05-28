@@ -31,25 +31,35 @@ expain出来的信息有10列，分别是id、select_type、table、type、possi
   - dependent primary
 - table 查询的哪张表，可能是别名
 - type 访问类型 常用的类型有： **ALL, index,  range, ref, eq_ref, const, system, NULL（从左到右，性能从差到好，这也是优化的依据）**
+   - system:表仅有一行(=系统表)。这是const联接类型的一个特例。
+   - const:表最多有一个匹配行,它将在查询开始时被读取。因为仅有一行,在这行的列值可被优化器剩余部分认为是常数。const表很快,因为它们只读取一次!
+   - eq_ref:对于每个来自于前面的表的行组合,从该表中读取一行。这可能是最好的联接类型,除了const类型。
+   - ref:对于每个来自于前面的表的行组合,所有有匹配索引值的行将从这张表中读取。
+   - ref_or_null:该联接类型如同ref,但是添加了MySQL可以专门搜索包含NULL值的行。
+   - index_merge:该联接类型表示使用了索引合并优化方法。
+   - unique_subquery:该类型替换了下面形式的IN子查询的ref: value IN (SELECT primary_key FROM single_table WHERE some_expr) unique_subquery是一个索引查找函数,可以完全替换子查询,效率更高。
+   - index_subquery:该联接类型类似于unique_subquery。可以替换IN子查询,但只适合下列形式的子查询中的非唯一索引: value IN (SELECT key_column FROM single_table WHERE some_expr)
+   - range:只检索给定范围的行,使用一个索引来选择行。
+   - index:该联接类型与ALL相同,除了只有索引树被扫描。这通常比ALL快,因为索引文件通常比数据文件小。
+   - ALL:对于每个来自于先前的表的行组合,进行完整的表扫描。
 - possible_keys 可能的索引，但是并不一定使用
 - key 实际使用的索引
 - key_len 索引使用的字节数，索引字段的最大长度，并非实际使用长度，越短越好
 - ref 连接条件
 - rows 估算的找到所需记录所需要读取的行数
 - Extra 解决查询的详细信息
-```
-Using where:列数据是从仅仅使用了索引中的信息而没有读取实际的行动的表返回的，这发生在对表的全部的请求列都是同一个索引的部分的时候，表示mysql服务器将在存储引擎检索行后再进行过滤
 
-Using temporary：表示MySQL需要使用临时表来存储结果集，常见于排序和分组查询
+  - Using where:列数据是从仅仅使用了索引中的信息而没有读取实际的行动的表返回的，这发生在对表的全部的请求列都是同一个索引的部分的时候，表示mysql服务器将在存储引擎检索行后再进行过滤
+  - Using temporary：表示MySQL需要使用临时表来存储结果集，常见于排序和分组查询
+  - 
+  - Using filesort：MySQL中无法利用索引完成的排序操作称为“文件排序”
+  - 
+  - Using join buffer：该值强调了在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。如果出现了这个值，那应该注意，根据查询的具体情况可能需要添加索引来改进能。
+  - 
+  - Impossible where：这个值强调了where语句会导致没有符合条件的行。
+  - 
+  - Select tables optimized away：这个值意味着仅通过使用索引，优化器可能仅从聚合函数结果中返回一行
 
-Using filesort：MySQL中无法利用索引完成的排序操作称为“文件排序”
-
-Using join buffer：该值强调了在获取连接条件时没有使用索引，并且需要连接缓冲区来存储中间结果。如果出现了这个值，那应该注意，根据查询的具体情况可能需要添加索引来改进能。
-
-Impossible where：这个值强调了where语句会导致没有符合条件的行。
-
-Select tables optimized away：这个值意味着仅通过使用索引，优化器可能仅从聚合函数结果中返回一行
-```
 总结：
 - EXPLAIN不会告诉你关于触发器、存储过程的信息或用户自定义函数对查询的影响情况
 - EXPLAIN不考虑各种Cache
