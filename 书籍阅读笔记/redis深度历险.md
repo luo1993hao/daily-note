@@ -35,3 +35,6 @@
 - 延时队列：zset
    - 消息序列化成一个字符串作 为 zset 的 value，这个消息的到期处理时间作为 score，然后用多个线程轮询 zset 获取到期 的任务进行处理
 #### 位图
+#### HyperLogLog
+- 不精确的去重计数方案
+  -  pfadd 和 pfcount pfmerge
