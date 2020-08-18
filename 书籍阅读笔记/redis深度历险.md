@@ -96,5 +96,14 @@ exec 指示事务的执行，discard 指示事务的丢弃。
 - CAP 原理就是:网络分区发生时，一致性和可用性两难全。
 - 修改指令->本地内存buffer（定长环形数组）->异步同步到从节点。从节点反馈偏移量
 - 快照同步
- - ![](https://i.loli.net/2020/08/18/eT4lYBdEiyqCb1Q.png)
+ ![](https://i.loli.net/2020/08/18/eT4lYBdEiyqCb1Q.png)
 - 无盘复制:指主服务器直接通过套接字 将快照内容发送到从节点 
+### 集群
+#### Redis Sentinel
+- Redis Sentinel 集群看成是一个 ZooKeeper 集群
+- 门面+调度器
+  - 当主节点挂掉时，自动选择一个最优的从节点切换为 主节点
+  - 客户端来连接集群时，会首先连接 sentinel，通过 sentinel 来查询主节点的地址
+  - 主节点发生故障时，客户端会重新向 sentinel 要地 址，sentinel 会将最新的主节点地址告诉客户端
+  - Sentinel 会持续监控已经挂掉了主节点
+  - Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失
