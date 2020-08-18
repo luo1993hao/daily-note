@@ -38,3 +38,25 @@
 #### HyperLogLog
 - 不精确的去重计数方案
   -  pfadd 和 pfcount pfmerge
+#### 布隆过滤器
+- 不怎么精确的set,存在，可能不存在。不存在。一定不存在
+- 场景：给用户推荐新闻，爬虫系统。邮箱系统垃圾邮件过滤
+- bf.add,bff.exists/bf.madd,bf.mexists
+- 自定义参数：bf.reserve：key, error_rate 和 initial_size
+- 大型的位数组和几个不一样的无 偏 hash 函数
+![](https://i.loli.net/2020/08/18/l7uPmSnABM18Tde.png)
+#### 简单限流
+- 限定用户的某个行为在指定的时间里 只能允许发生 N 次
+  - 滑动时间窗口
+  - zset:key:用户行为 value:时间戳 score:时间戳。
+  - 移除当前时间戳之前的行为，获取窗口内的数量，比较阈值
+  - 记录窗口所有行为，适用于量不是很大的场景
+#### 漏斗限流
+- redis-cell:使用了漏斗算法，并 提供了原子的限流指令
+#### GeoHash
+- 场景：附近的xxx。zset
+- Geo 的数据使用单独的 Redis 实例部署，不使用集群环境
+#### scan
+- keys算法是遍历算法。on
+- redis的内存大起大落->大key->定位大key->bigkeys
+- scan 指令是一系列指令.zscan:zset.hscan:hash
