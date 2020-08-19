@@ -27,6 +27,9 @@
    - set时候，设置一个value随机数，先匹配。->使用lua脚本来保证多个指令的原子性
 - 可重入性
   - 使用threadLocal包装set
+- 分布式环境下redlock算法
+  - 大多数机制
+  - 场景：高可用性。性能下降
 #### 延时队列
 - 只有一组消费者
 - 移步消息list：lpush 和 rpop
@@ -107,3 +110,55 @@ exec 指示事务的执行，discard 指示事务的丢弃。
   - 主节点发生故障时，客户端会重新向 sentinel 要地 址，sentinel 会将最新的主节点地址告诉客户端
   - Sentinel 会持续监控已经挂掉了主节点
   - Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失
+#### codis
+- 转发代理中间件
+- 默认key分为1024个slot（可配置）.key->crc32->mod 1024  
+- 将槽位关系存储在 zk 中
+- 自动均衡slot
+- 优点
+  - 简单
+- 缺点
+   - 不支持事务
+   - 单个value不能过大
+   - 非官方，更新慢
+#### cluster
+- 去中心化
+- Redis Cluster 将所有数据划分为 16384 的 slots。每个节点负责一部分slot
+- Redis Cluster 的客户端来连接集群时，它也会得到一份集群的槽位配置信息
+- 迁移
+   - redis-trib
+   - 同步。从源节点获取内容 => 存到目标节点 => 从源节点删除内容。
+   - 两个特殊的 error 指令，一个是 moved，一个是 asking。
+- 容错
+  - cluster-require-full-coverage 可以允许部分 节点故障
+  - 单主节点故障时，集群会自动将其 中某个从节点提升为主节点
+ #### info
+- 每秒执行多少指令：info stats->instantaneous_ops_per_sec
+- monitor 指令快速观察一下究竟是哪些 key 访问比较频繁
+- 连接多少客户端：info clients
+- 内存占用多大：info memeory->user_memeory_xxxx
+- 复制积压缓冲区：info replication->repl_backlog_size
+#### 过期策略
+- 定时删除
+  - 设置过期时间key放在一个集合
+  - 从过期字典中随机 20 个 key;
+  - 删除这 20 个 key 中已经过期的 key; 
+  - 如果过期的 key 比率超过 1/4，那就重复步骤 1;
+- 惰性处理
+  - 访问key的时候。如果过期。再删除
+- 大批量的 key 过期，要给过期时间设置 一个随机范围，而不能全部在同一时间过期。
+- 从库通过aof指令删除
+#### 懒惰删除
+- Redis 内部实际上并不是只有一个主线程，它还有几个异步线程专门用来 处理一些耗时的操作
+- aof sync
+- unlink替代flush
+#### 保护redis
+- 指令安全
+ - rename-command
+- 端口安全
+  - 指定端口，密码，从库密码
+- lua脚本安全
+   - 禁止 Lua 脚本由用户输入的内容 (UGC) 生成
+   - redis以普通用户登陆
+#### Redis 安全通信
+![](https://i.loli.net/2020/08/19/OYDh72sJymUqRSF.png)
