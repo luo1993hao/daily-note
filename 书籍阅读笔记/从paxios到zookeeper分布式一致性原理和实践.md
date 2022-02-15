@@ -49,3 +49,19 @@
   - fifo（跟共享锁改进版本思路一致。创建节点->如果不是最小节点->注册比自己序号小的最后一个节点的watcher监听->等待）
   - Barrier模型（并行计算）
     - 跟jdk中CyclicBarrier思想一致。设置一个count。每次注册节点后获取所有节点。个数=count。则释放监听。个数<count，注册所有节点监听。进入等待
+#### 在其他项目的应用
+##### hadoop
+- 主要用于实现ha
+  - 多个resourceManager。一个Active，负责集群所有资源的管理与分配。其余standBy.
+    - 创建临时锁节点。成功得分为active。失败的为standBy。
+    - 所有standBy的注册watcher监听。当主节点挂掉后。收到watcher事件通知
+    - 通过Fencing机制避免"脑裂""（做法就是创建节点时候携带zk的acl信息。防止其他节点进行更新）
+##### Hbase
+- 主要用于分布式协调    
+##### kafka
+- broker管理
+- topic注册
+- 消费者注册
+- 负载均衡
+  - 生产者负载均衡（通过watcher通知让生产者动态的获取broker和topic情况）
+  - 消费者负载均衡
