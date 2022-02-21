@@ -65,3 +65,38 @@
 - 负载均衡
   - 生产者负载均衡（通过watcher通知让生产者动态的获取broker和topic情况）
   - 消费者负载均衡
+### 技术内幕
+#### 系统模型
+- 数据模型
+  - znode
+  - 持久节点
+  - 临时节点
+  - verson字段用于乐观锁
+  - watcher机制
+    - 客户端注册
+    - 服务端处理
+    - 客户端回调
+- ACL （scheme:id:permission）
+  - 权限模式
+    - ip
+    - digest
+    - word
+    - super
+  - 授权对象
+  - 权限
+    - CREATE
+    - DELETE
+    - READ
+    - WRITE
+    - ADMIN
+#### 序列化与协议
+- 序列化使用Jute    
+- 通信协议
+  - 基于tcp/ip。请求包含请求头与请求体。相应包含相应头和相应体
+  - 不同的请求/相应类型。数据结构不一样
+#### 客户端
+- zk实例
+- ClientWatcherManager
+- clientCnxn
+  - SendThread(I/O)
+  - EventThread(event)
