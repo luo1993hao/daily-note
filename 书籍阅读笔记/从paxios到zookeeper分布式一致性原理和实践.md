@@ -97,6 +97,30 @@
 #### 客户端
 - zk实例
 - ClientWatcherManager
+- HostProvider：客户端地址列表管理器
 - clientCnxn
   - SendThread(I/O)
   - EventThread(event)
+#### 会话
+- sessionId:高8位确定所在机器，后56位使用时间戳进行随机
+##### 会话的的创建过程
+- 初始化阶段
+  - 初始化上述组件
+- 会话创建阶段
+  - 启动SendThread，EventThread，创建tcp连接，构建请求，发送请求
+- 相应处理阶段
+  - 接受请求，处理response，查询Watcher,处理事件
+#### 服务器启动
+- 单机 
+  - 配置文件解析
+  - 初始化数据管理器 
+    - FileTxnSnapLog 根据配置文件解析出的快照数据目录dataDir与事务日志目录dataLogDir创建
+  - 初始化io管理器
+  - 数据恢复
+  - 对外服务
+- 集群（比单机多的步骤）
+  - 创建qunrumPeer实例（zks实例托管者。检测服务器状态和发起leader选举）
+  - 创建内存数据库zkDatabase
+  - 初始化qunrumPeer
+  - 初始化leader选举（服务器id+最新ZXID+当前epoch=>大多数情况下都会投自己一票，FastLeaderElection算法）
+  - leader选举（简单来说，哪个机器的数据越新，越有可能成为leader(先看zxid，然后看服务器id)）
