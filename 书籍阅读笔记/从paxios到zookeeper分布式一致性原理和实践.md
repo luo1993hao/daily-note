@@ -119,8 +119,38 @@
   - 数据恢复
   - 对外服务
 - 集群（比单机多的步骤）
-  - 创建qunrumPeer实例（zks实例托管者。检测服务器状态和发起leader选举）
+  - 创建quorumPeer实例（zks实例托管者。检测服务器状态和发起leader选举） (quorum:过半机器数)
   - 创建内存数据库zkDatabase
-  - 初始化qunrumPeer
+  - 初始化quorumPeer
   - 初始化leader选举（服务器id+最新ZXID+当前epoch=>大多数情况下都会投自己一票，FastLeaderElection算法）
   - leader选举（简单来说，哪个机器的数据越新，越有可能成为leader(先看zxid，然后看服务器id)）
+#### leader选举
+##### 大概流程
+  - 优先选自己
+  - 每个服务器都接收来自各个服务器的投票
+  - 处理投票
+    -zxid->myid 票形：（sid,zxid）
+  - 每个服务器统计投票
+  - 改变状态
+##### 时机
+- 服务器初始化
+- 运行期间无法和leader保持连接
+##### 服务器状态
+- LOOKING
+- FOLLOWING
+- LEADING
+- OBSERVER
+##### 其他知识
+- tcp规则：只允许sid大的服务器主动和其他服务器建立连接
+#### 服务器角色
+- Leader
+  - 事务请求的唯一调度和处理者，保证集群事务处理的顺序性
+  - 集群内部各服务器的调度着
+  - 使用责任链来处理每一个客户端请求（7个Processor，事务处理，日志记录，事务提交）
+- Follower
+  - 处理非事务请求，转发事务请求给Leader
+  - 参与事务请求的投票
+  - 参与Leader选举投票
+  - 使用责任链来处理请求（少了事务处理的Processor）
+- observer
+   - 不参与投票的follower(事务请求与leader选举)
