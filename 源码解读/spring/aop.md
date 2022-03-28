@@ -1,9 +1,16 @@
 ### 前言
 想了解spring aop的整个流程是有一定难度的，需要spring ioc和如何使用aop的基础知识。如何没有这2个基础知识，
 就算你看懂了整个aop流程，知识也是凌乱的。而且了解源码整个过程是枯燥的，是漫长的，这篇文章也知识我自己结合源码与网上各位大牛梳理的整个流程，
+而且也只是梳理了主流程，对于细节代码（比如解析标签这块）没有去详细说明，这也是我自己阅读spring源码的一个习惯吧，如果太抠细节，容易越绕越晕。
 可能会比较乱，建议结合源码阅读。
 ### 相关概念
-- JoinPoint
+
+- JoinPoint 连接点 增加逻辑的位置，程序中可以被调用的方法都可以叫做JoinPoint
+  - before
+  - after
+  - afterReturning
+  - throws
+  - around
 - Advice 需要增强的逻辑
     - before
     - after
@@ -11,9 +18,16 @@
     - throws
     - around
 - PointCut 定义哪些方法哪些类需要advice
-- Advisor 切面。 组合pointCut+advice
+- Advisor 。 组合pointCut+advice
     - 需要增强的目标方法列表，这个通过切入点(Pointcut)来指定
     - 需要在目标方法中增强的逻辑，这个通过(Advice)通知来指定
+- Aspect 切面 与Advisor差不多
+#### 通知类型
+- 前置通知（Before advice）: 在某连接点之前执行的通知，但这个通知不能阻止连接点之前的执行流程（除非抛出异常）。
+- 后置通知（After returning advice）：在某连接点正常完成后执行的通知。
+- 异常通知（After throw advice）: 在方法抛出异常退出时执行的通知。
+- 最终通知(After/finally advice): 当某连接点退出的时候执行的通知（不论是正常返回还是异常退出）。
+- 环绕通知（Around advice）: 包围一个连接点的通知，如方法调用。这是一种最强大的通知类型，环绕通知可以在方法调用前后完成自定义的行为。它也会选择是否继续执行连接点或者直接返回它自己的返回这或者抛出异常来结束执行。
 
 ### 使用方式
 
@@ -62,7 +76,7 @@
 < aop:config/>用于基于XML配置AOP，
 < aop:aspectj-autoproxy/>用于基于XML开启AOP注解自动配置的支持，也就是支持@Aspect切面类及其内部的AOP注解
 
-2. 标签解析（ConfigBeanDefinitionParser.parse）
+2. 注册自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）
 
 ```
 ...
@@ -73,7 +87,7 @@
  // < aop:config/>->AspectJAwareAdvisorAutoProxyCreator
  //< aop:aspectj-autoproxy/>以及@EnableAspectJAutoProxy->AnnotationAwareAspectJAutoProxyCreator
  //< tx:annotation-driven/>以及@EnableTransactionManagement-> InfrastructureAdvisorAutoProxyCreator
- //但是容器最终只会注册一个，采用优先级最高的
+ //但是容器最终只会注册一个，采用优先级最高的（InfrastructureAdvisorAutoProxyCreator < AspectJAwareAdvisorAutoProxyCreator < AnnotationAwareAspectJAutoProxyCreator）
 	configureAutoProxyCreator(parserContext, element);
  //解析标签
 		List<Element> childElts = DomUtils.getChildElements(element);
@@ -138,7 +152,43 @@
 		return beanDefinition;
 	}
 ```
+2.2 标签解析
+常见标签配置
+```
+<!--AOP配置-->
+<aop:config expose-proxy="true">
+    <!--切入点-->
+    <aop:pointcut id="pointcut" expression="execution(* *(..))"/>
+    <!--切面，ref引用切面通知类aspectMethod，方便调用其方法-->
+    <aop:aspect id="aspect" ref="aspectMethod">
+        <!--通知-->
+        <aop:before method="aspect" pointcut-ref="pointcut"/>
+        <aop:after method="aspect" pointcut-ref="pointcut"/>
+        <aop:after method="aspect" pointcut-ref="pointcut"/>
+    </aop:aspect>
+</aop:config>
+```
+2.2.1 解析pointCut标签 	:	parsePointcut(elt, parserContext);
+作用：parsePointcut方法用于解析< aop:pointcut/>切入点标签，并将一个< aop:pointcut/>标签封装成为一个bean定义并且注册到IoC容器缓存中
+关键字：RootBeanDefinition，beanClass类型为AspectJExpressionPointcut。随后以id作为beanName
+2.2.2 解析advisor标签:	parseAdvisor(elt, parserContext);
+作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
+关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。
+2.2.3 解析Aspect标签 ：	parseAspect(elt, parserContext);
+作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
+内部标签说明：
+- < aop:declare-parents/>
+- advice通知子标签，包括< aop:before/>、< aop:after/>、< aop:after-returning/>、< aop:after-throwing/>、< aop:around/>
+- 解析所有< aop:pointcut/>切入点子标签
 
+当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义
+
+3. 创建代理对象
+第二步配置的AbstractAdvisorAutoProxyCreator
+- < tx:annotation-driven />标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
+- < aop:config />标签，AbstractAdvisorAutoProxyCreator=AspectJAwareAdvisorAutoProxyCreator
+- < aop:aspectj-autoproxy />标签或者@EnableAspectJAutoProxy注解，，AbstractAdvisorAutoProxyCreator= AnnotationAwareAspectJAutoProxyCreator.class
+负责代理对象的创建。上文说到它继承与
 
 #### 创建代理对象
 
