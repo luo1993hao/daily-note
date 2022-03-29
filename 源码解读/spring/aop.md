@@ -1,16 +1,17 @@
 ### 前言
+
 想了解spring aop的整个流程是有一定难度的，需要spring ioc和如何使用aop的基础知识。如何没有这2个基础知识，
 就算你看懂了整个aop流程，知识也是凌乱的。而且了解源码整个过程是枯燥的，是漫长的，这篇文章也知识我自己结合源码与网上各位大牛梳理的整个流程，
-而且也只是梳理了主流程，对于细节代码（比如解析标签这块）没有去详细说明，这也是我自己阅读spring源码的一个习惯吧，如果太抠细节，容易越绕越晕。
-可能会比较乱，建议结合源码阅读。
+而且也只是梳理了主流程，对于细节代码（比如解析标签这块）没有去详细说明，这也是我自己阅读spring源码的一个习惯吧，如果太抠细节，容易越绕越晕。 可能会比较乱，建议结合源码阅读。
+
 ### 相关概念
 
 - JoinPoint 连接点 增加逻辑的位置，程序中可以被调用的方法都可以叫做JoinPoint
-  - before
-  - after
-  - afterReturning
-  - throws
-  - around
+    - before
+    - after
+    - afterReturning
+    - throws
+    - around
 - Advice 需要增强的逻辑
     - before
     - after
@@ -22,7 +23,9 @@
     - 需要增强的目标方法列表，这个通过切入点(Pointcut)来指定
     - 需要在目标方法中增强的逻辑，这个通过(Advice)通知来指定
 - Aspect 切面 与Advisor差不多
+
 #### 通知类型
+
 - 前置通知（Before advice）: 在某连接点之前执行的通知，但这个通知不能阻止连接点之前的执行流程（除非抛出异常）。
 - 后置通知（After returning advice）：在某连接点正常完成后执行的通知。
 - 异常通知（After throw advice）: 在方法抛出异常退出时执行的通知。
@@ -76,7 +79,7 @@
 < aop:config/>用于基于XML配置AOP，
 < aop:aspectj-autoproxy/>用于基于XML开启AOP注解自动配置的支持，也就是支持@Aspect切面类及其内部的AOP注解
 
-2. 注册自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）
+2. 配置自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）
 
 ```
 ...
@@ -106,7 +109,9 @@
 		}
 		...
 ```
-2.1  配置自动代理对象(上述的configureAutoProxyCreator(parserContext, element))
+
+2.1 配置自动代理对象(上述的configureAutoProxyCreator(parserContext, element))
+
 ```
 1.
 	public static void registerAspectJAutoProxyCreatorIfNecessary(
@@ -152,8 +157,9 @@
 		return beanDefinition;
 	}
 ```
-2.2 标签解析
-常见标签配置
+
+2.2 标签解析 常见标签配置
+
 ```
 <!--AOP配置-->
 <aop:config expose-proxy="true">
@@ -168,27 +174,302 @@
     </aop:aspect>
 </aop:config>
 ```
-2.2.1 解析pointCut标签 	:	parsePointcut(elt, parserContext);
-作用：parsePointcut方法用于解析< aop:pointcut/>切入点标签，并将一个< aop:pointcut/>标签封装成为一个bean定义并且注册到IoC容器缓存中
-关键字：RootBeanDefinition，beanClass类型为AspectJExpressionPointcut。随后以id作为beanName
-2.2.2 解析advisor标签:	parseAdvisor(elt, parserContext);
-作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
-关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。
-2.2.3 解析Aspect标签 ：	parseAspect(elt, parserContext);
-作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
+
+2.2.1 解析pointCut标签    :    parsePointcut(elt, parserContext); 作用：parsePointcut方法用于解析< aop:pointcut/>切入点标签，并将一个< aop:
+pointcut/>标签封装成为一个bean定义并且注册到IoC容器缓存中 关键字：RootBeanDefinition，beanClass类型为AspectJExpressionPointcut。随后以id作为beanName 2.2.2
+解析advisor标签:    parseAdvisor(elt, parserContext); 作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:
+advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
+关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。 2.2.3
+解析Aspect标签 ： parseAspect(elt, parserContext); 作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
 内部标签说明：
+
 - < aop:declare-parents/>
 - advice通知子标签，包括< aop:before/>、< aop:after/>、< aop:after-returning/>、< aop:after-throwing/>、< aop:around/>
 - 解析所有< aop:pointcut/>切入点子标签
 
 当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义
 
-3. 创建代理对象
-第二步配置的AbstractAdvisorAutoProxyCreator
-- < tx:annotation-driven />标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
+3. 创建代理对象 第二步配置的AbstractAdvisorAutoProxyCreator
+
+- < tx:annotation-driven />
+  标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
 - < aop:config />标签，AbstractAdvisorAutoProxyCreator=AspectJAwareAdvisorAutoProxyCreator
-- < aop:aspectj-autoproxy />标签或者@EnableAspectJAutoProxy注解，，AbstractAdvisorAutoProxyCreator= AnnotationAwareAspectJAutoProxyCreator.class
-负责代理对象的创建。上文说到它继承与
+- < aop:aspectj-autoproxy />标签或者@EnableAspectJAutoProxy注解，AbstractAdvisorAutoProxyCreator=
+  AnnotationAwareAspectJAutoProxyCreator.class 负责代理对象的创建。 3.1 注册AbstractAdvisorAutoProxyCreator
+  上文说到它继承于BeanPostProcessor,所以他的注册发生ioc容器启动的AbstractApplicationContext refresh流程中的registerBeanPostProcessors 3.2 创建代理对象
+  AbstractAdvisorAutoProxyCreator继承BeanPostProcessor，所以可以大胆猜测对代理对象的创建发生在bean初始化填充属性阶段，利于BeanPostProcessor的postProcessBeforeInitialization
+  与postProcessAfterInitialization阶段进行代理对象的增强，而bean的创建都在AbstractApplicationContext refresh流程中，代理对象的增强发生在
+  beanFactory.preInstantiateSingletons() 最后一步。随后点击getBean(),然后doGetBean()
+
+```
+	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
+			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
+			//...省略前面代码
+				// Create bean instance.
+				if (mbd.isSingleton()) {
+					sharedInstance = getSingleton(beanName, () -> {
+						try {
+						//核心方法
+						//这一步完成了普通Bean与代理bean的创建
+							return createBean(beanName, mbd, args);
+						}
+						catch (BeansException ex) {
+							// Explicitly remove instance from singleton cache: It might have been put there
+							// eagerly by the creation process, to allow for circular reference resolution.
+							// Also remove any beans that received a temporary reference to the bean.
+							destroySingleton(beanName);
+							throw ex;
+						}
+					});
+					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
+				}
+			}
+
+```
+
+再点进createBean
+
+```
+protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+			throws BeanCreationException {
+			///省略前面代码
+				try {
+			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			//第一次调用，该方法前bean还没有被实例化出来，这个resolveBeforeInstantiation方法执行后也还没有实例化出bean，
+			//这个方法比较有迷惑性，简单来说这个方法做了2个事情。（第一点甚至可以忽略）
+			//1.如果自定义的了一个targetSource（这块还不是很清楚，目前所了解的都是没有自定义的），则不走下面doCreateBean，也就是spring创建bean的流程。随后进行代理增强，最后返回
+			//2.将一些aop基类作为黑名单加入一个集合，后续这些类都不做aop处理
+			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+			if (bean != null) {
+				return bean;
+			}
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(mbdToUse.getResourceDescription(), beanName,
+					"BeanPostProcessor before instantiation of bean failed", ex);
+		}
+
+		try {
+		//这才是核心流程
+			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Finished creating instance of bean '" + beanName + "'");
+			}
+			return beanInstance;
+		}
+			}
+
+```
+
+3.2.1 resolveBeforeInstantiation
+点进resolveBeforeInstantiation方法，核心方法就是applyBeanPostProcessorsBeforeInstantiation与applyBeanPostProcessorsAfterInitialization，
+其中applyBeanPostProcessorsBeforeInstantiation
+
+```
+	@Nullable
+	protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
+		Object bean = null;
+		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
+			// Make sure bean class is actually resolved at this point.
+			//mbd.isSynthetic()：一个类是否为合并类（如内部类），一般扫描的都不是合并类
+			//这个hasInstantiationAwareBeanPostProcessors标志是在refresh方法的registerBeanPostProcessors方法内赋值了，
+
+			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+				Class<?> targetType = determineTargetType(beanName, mbd);
+				if (targetType != null) {
+					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+					if (bean != null) {
+						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+					}
+				}
+			}
+			mbd.beforeInstantiationResolved = (bean != null);
+		}
+		return bean;
+	}
+
+```
+
+3.2.1 applyBeanPostProcessorsBeforeInstantiation 点进去会走到AbstractAutoProxyCreator.postProcessBeforeInstantiation
+
+```
+//这个方法基本都会返回null，所以上述流程的applyBeanPostProcessorsAfterInitialization 也不会执行
+@Override
+public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
+ 
+   //第一步：通过beanName返回对应类名，
+   //如果beanName对应普通Bean则直接返回beanClass,
+   //如果beanName对应FactoryBean的话则名称前加上&表明得到的是FactoryBean本身类名(这个是Bean的知识点)
+   Object cacheKey = getCacheKey(beanClass, beanName);
+ 
+   //第二步：对扫描的所有bean，判断哪些bean是不能被代理，获取已经被代理了，
+   //如果发现了上述两种bean则放入到advisedBeans中，这个advisedBeans对象的作用是辅助剔除哪些bean不能被AOP代理。
+   //我们知道，切面类，类中包含Advice，Pointcut，Advisor，AopInfrastructureBean都是不能被代理的bean，
+   //而且启动配置类加了开启AOP注解则是已经被代理的bean，也会被放入这个advisedBeans中
+   if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+      if (this.advisedBeans.containsKey(cacheKey)) {
+         return null;
+      }
+      //isInfrastructureClass会判断是否包含Aspect注解，或者xml中配置为了Aspect，
+      //如果是就会放入到advisedBeans中
+      if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
+         this.advisedBeans.put(cacheKey, Boolean.FALSE);
+         return null;
+      }
+   }
+ 
+   // Create proxy here if we have a custom TargetSource.
+   // Suppresses unnecessary default instantiation of the target bean:
+   // The TargetSource will handle target instances in a custom fashion.
+ 
+   //第三步：内部通过internalBeanFactory.registerBeanDefinition(beanName, bdCopy)产生一个目标对象targetSource
+   //但是这一步都是返回了null。目前还不了解不返回null的场景，下面代码可以忽略
+   TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+ 
+   //第四步：获取通知，创建代理对象。由于targetSource都是null，所以下面代码都不会执行，整个方法都返回null
+   if (targetSource != null) {
+      if (StringUtils.hasLength(beanName)) {
+         this.targetSourcedBeans.add(beanName);
+      }
+ 
+      //从Bean中获取所有通知
+      Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
+ 
+      //创建代理对象
+      Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
+ 
+      //放入proxyTypes缓存Map中
+      this.proxyTypes.put(cacheKey, proxy.getClass());
+      return proxy;
+   }
+ 
+   return null;
+
+```
+
+3.2.2 创建bean 点进doCreateBean,核心方法是initializeBean
+
+```
+	protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, final @Nullable Object[] args)
+			throws BeanCreationException {
+			//......
+				// Initialize the bean instance.
+		Object exposedObject = bean;
+		try {
+			populateBean(beanName, mbd, instanceWrapper);
+			exposedObject = initializeBean(beanName, exposedObject, mbd);
+		}
+			}
+
+```
+
+点进initializeBean
+
+```
+	protected Object initializeBean(final String beanName, final Object bean, @Nullable RootBeanDefinition mbd) {
+	//.....
+		Object wrappedBean = bean;
+		if (mbd == null || !mbd.isSynthetic()) {
+		//这里其实什么都没做，直接返回的bean
+			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
+		}
+
+		try {
+			invokeInitMethods(beanName, wrappedBean, mbd);
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(
+					(mbd != null ? mbd.getResourceDescription() : null),
+					beanName, "Invocation of init method failed", ex);
+		}
+		if (mbd == null || !mbd.isSynthetic()) {
+		//核心方法，进行后置增强
+			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
+		}
+	}
+
+```
+点进applyBeanPostProcessorsAfterInitialization，我们上述说了无论使用哪种AOP方式，
+ < aop:config/>->AspectJAwareAdvisorAutoProxyCreator
+< aop:aspectj-autoproxy/>以及@EnableAspectJAutoProxy->AnnotationAwareAspectJAutoProxyCreator
+< tx:annotation-driven/>以及@EnableTransactionManagement-> InfrastructureAdvisorAutoProxyCreator
+其父类都是AbstractAutoProxyCreator
+所以代码将会进入到AbstractAutoProxyCreator.postProcessAfterInitialization
+其中wrapIfNecessary
+这个方法非常重要，关于判断是否代理，创建AOP动态代理对象以及往黑名单map中添加如配置启动类等操作都在这里进行后面还会多次提及
+
+```
+	@Override
+	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) throws BeansException {
+		if (bean != null) {
+			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			if (!this.earlyProxyReferences.contains(cacheKey)) {
+				return wrapIfNecessary(bean, beanName, cacheKey);
+			}
+		}
+		return bean;
+	}
+
+```
+点进wrapIfNecessary，核心方法为getAdvicesAndAdvisorsForBean与createProxy
+```
+	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+	//  如果targetSourcedBeans缓存中包含该beanName，表示已通过TargetSource创建了代理，直接返回原始bean实例
+      targetSourcedBeans在postProcessBeforeInstantiation中就见过了
+		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
+			return bean;
+		}
+		//   如果advisedBeans缓存中包含该cacheKey，并且value为false，表示不需要代理，直接返回原始bean实例
+     //advisedBeans在postProcessBeforeInstantiation中就见过了
+		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
+			return bean;
+		}
+		//   如果当前bean是Spring AOP的基础结构类，或者shouldSkip返回true，表示不需要代理，直接返回原始bean实例
+     //这个shouldSkip方法，在AspectJAwareAdvisorAutoProxyCreator子类中将会被重写并初始化全部的Advisor通知器实例
+     // 这两个方法在postProcessBeforeInstantiation中就见过了
+
+		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+			this.advisedBeans.put(cacheKey, Boolean.FALSE);
+			return bean;
+		}
+
+		// Create proxy if we have advice.
+		//首先会根据bean查找以这个bean作为连接点的所有通知放到Object[]数组中：
+		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		if (specificInterceptors != DO_NOT_PROXY) {
+			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			//通过JDK或者CGLIB创建代理对象，使用默认的SingletonTargetSource包装目标对象
+			Object proxy = createProxy(
+					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+			this.proxyTypes.put(cacheKey, proxy.getClass());
+			return proxy;
+		}
+
+		this.advisedBeans.put(cacheKey, Boolean.FALSE);
+		return bean;
+	}
+
+```
+
+getAdvicesAndAdvisorsForBean
+
+```
+--getBean
+   --doGetBean
+    --getSingleton
+     --createBean
+      --resolveBeforeInstantiation
+       --applyBeanPostProcessorsBeforeInstantiation
+        --doCreateBean
+         --initializeBean
+         postProcessBeforeInitialization
+          --applyBeanPostProcessorsAfterInitialization
+           --postProcessAfterInitialization
+            --wrapIfNecessary
+             --createProxy
+     --addSingleton
+
+```
 
 #### 创建代理对象
 
