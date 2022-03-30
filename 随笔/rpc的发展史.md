@@ -8,11 +8,12 @@
 1987 年，在“透明的 RPC 调用”一度 成为主流范式的时候，Andrew Tanenbaum 教授发表了论文提出反对意见，中心观点：
 本地调用与远程调用当做一样处理，这是犯了方向性的错误，把系统 间的调用做成透明，反而会增加程序员工作的复杂度。
 后来1997年，一众大佬总结了通过网络进行分布式运算的八宗罪
-2. The network is reliable —— 网络是可靠的。
-3. Latency is zero —— 延迟是不存在的。
-4. Bandwidth is infinite —— 带宽是无限的。
-5. The network is secure —— 网络是安全的。
-6. Topology doesn't change —— 拓扑结构是一成不变的。 6. There is one administrator —— 总会有一个管理员。
+1. The network is reliable —— 网络是可靠的。
+2. Latency is zero —— 延迟是不存在的。
+3. Bandwidth is infinite —— 带宽是无限的。
+4. The network is secure —— 网络是安全的。
+5. Topology doesn't change —— 拓扑结构是一成不变的。
+6. There is one administrator —— 总会有一个管理员。
 7. Transport cost is zero —— 不必考虑传输成本。
 8. The network is homogeneous —— 网络是同质化的。
 - 三个问题
