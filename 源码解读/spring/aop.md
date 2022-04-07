@@ -189,8 +189,14 @@ advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
 
 当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义
 
-3. 创建代理对象 第二步配置的AbstractAdvisorAutoProxyCreator
 
+#### 创建代理对象
+
+- 筛选出所有适合当前Bean的通知器，也就是所有的Advisor、Advise、Interceptor。
+- 选择使用JDK还是CGLIB来进行创建代理。
+- 使用具体的代理实现来创建代理。
+
+ 第二步配置的AbstractAdvisorAutoProxyCreator
 - < tx:annotation-driven />
   标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
 - < aop:config />标签，AbstractAdvisorAutoProxyCreator=AspectJAwareAdvisorAutoProxyCreator
@@ -396,7 +402,7 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 其父类都是AbstractAutoProxyCreator
 所以代码将会进入到AbstractAutoProxyCreator.postProcessAfterInitialization
 其中wrapIfNecessary
-这个方法非常重要，关于判断是否代理，创建AOP动态代理对象以及往黑名单map中添加如配置启动类等操作都在这里进行后面还会多次提及
+这个方法非常重要，关于判断是否代理，创建AOP动态代理对象以及往黑名单map中添加如配置启动类等操作都在这里
 
 ```
 	@Override
@@ -451,7 +457,67 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 
 ```
 
+
 getAdvicesAndAdvisorsForBean
+这个方法就是返回该bean的advisors集合，前面说过advisors=pointCut+advice.简单的理解就是返回这个bean的哪个方法需要做哪些aop增强操作的集合。
+大概流程如下：
+1. 查找现在所有为advisor的bean
+2. 过滤适合该bean的advisor
+  - 比如我们常用的execution切入点表达式是否满足
+3. 添加一个特殊的Advisor到Advisors链头部
+4. 对advisors进行排序（@order）
+
+
+- createProxy 创建代理
+ 将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
+```
+return proxyFactory.getProxy(getProxyClassLoader());
+ 
+ 点进getProxy，进入DefaultAopProxyFactory的createAopProxy
+
+
+根据配置类型选择创建JDK或者CGLIB类型的AopProxy并返回。 大概逻辑如下：
+
+如果isOptimize方法返回true，即optimize属性为true，表示CGLIB代理应该主动进行优化，默认false；或者如果isProxyTargetClass方法返回true，即proxyTargetClass属性为true，表示应该使用CGLIB代理，默认false；或者如果hasNoUserSuppliedProxyInterfaces方法返回true，表示没有可使用的合理的代理接口或者只有一个代理接口并且属于SpringProxy接口体系（即校验interfaces集合，这个集合就是在此前evaluateProxyInterfaces方法中加入的接口集合）。以上三个条件满足任意一个，继续判断：
+如果要代理的目标类型是接口，或者目标类型就是Proxy类型，这两个条件满足任意一个，那么还是采用JDK代理，返回JdkDynamicAopProxy类型的AopProxy，proxyFactory作为构造器参数。
+两个条件都不满足，那么最终采用CGLIB代理，返回ObjenesisCglibAopProxy类型的AopProxy，proxyFactory作为构造器参数。
+
+ 	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+		if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+			Class<?> targetClass = config.getTargetClass();
+			if (targetClass == null) {
+				throw new AopConfigException("TargetSource cannot determine target class: " +
+						"Either an interface or a target is required for proxy creation.");
+			}
+			if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
+				return new JdkDynamicAopProxy(config);
+			}
+			return new ObjenesisCglibAopProxy(config);
+		}
+		else {
+			return new JdkDynamicAopProxy(config);
+		}
+	}
+
+
+```
+最终产生的AOP动态代理对象，就会返回到最上级的方法上：
+AbstractBeanFactory.doGetBean
+```
+
+sharedInstance = getSingleton(beanName, () -> {
+						try {
+					
+							return createBean(beanName, mbd, args);
+						}
+						
+
+getSingleton里面的
+singletonObject = singletonFactory.getObject();		（这个是一个function会触发createBean方法）				
+
+```
+最后放进singletonObjects单例池中供getBean()获取。
+到此，整个AOP的生命周期过程结束。
 
 ```
 --getBean
@@ -471,11 +537,13 @@ getAdvicesAndAdvisorsForBean
 
 ```
 
-#### 创建代理对象
+总结：
+创建代理对象流程内嵌在bean的创建过程中，只因为我们在第一步解析标签生成的
+AutoProxyCreator是一个BeanPostProcessor,所以会做一个后置增强，去找到适配该bean的advisor并将具体属性（在什么方法上进行怎样的增强）
+给赋在最后的代理对象上，根据配置选择jdk 或者cglib增强创建代理对象，最后返回增强对象到单例池中
 
-- 筛选出所有适合当前Bean的通知器，也就是所有的Advisor、Advise、Interceptor。
-- 选择使用JDK还是CGLIB来进行创建代理。
-- 使用具体的代理实现来创建代理。
+
+
 
 #### 代理的使用
 
