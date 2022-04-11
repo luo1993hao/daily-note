@@ -465,8 +465,25 @@ getAdvicesAndAdvisorsForBean
 2. 过滤适合该bean的advisor
   - 比如我们常用的execution切入点表达式是否满足
 3. 添加一个特殊的Advisor到Advisors链头部
-4. 对advisors进行排序（@order）
+4. 对advisors进行排序
+ - 1.@order 越小的排在前面
+ - 2.对于我们具体的通知，按照如下的排序方式（这个很重要，后续在具体调用的时候会使用）
 
+```
+**ReflectiveAspectJAdvisorFactory**
+	static {
+		Comparator<Method> adviceKindComparator = new ConvertingComparator<>(
+				new InstanceComparator<>(
+						Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class),
+				(Converter<Method, Annotation>) method -> {
+					AspectJAnnotation<?> annotation =
+						AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(method);
+					return (annotation != null ? annotation.getAnnotation() : null);
+				});
+		Comparator<Method> methodNameComparator = new ConvertingComparator<>(Method::getName);
+		METHOD_COMPARATOR = adviceKindComparator.thenComparing(methodNameComparator);
+	}
+```
 
 - createProxy 创建代理
  将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
