@@ -189,14 +189,14 @@ advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
 
 当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义
 
-
 #### 创建代理对象
 
 - 筛选出所有适合当前Bean的通知器，也就是所有的Advisor、Advise、Interceptor。
 - 选择使用JDK还是CGLIB来进行创建代理。
 - 使用具体的代理实现来创建代理。
 
- 第二步配置的AbstractAdvisorAutoProxyCreator
+第二步配置的AbstractAdvisorAutoProxyCreator
+
 - < tx:annotation-driven />
   标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
 - < aop:config />标签，AbstractAdvisorAutoProxyCreator=AspectJAwareAdvisorAutoProxyCreator
@@ -395,13 +395,12 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 	}
 
 ```
+
 点进applyBeanPostProcessorsAfterInitialization，我们上述说了无论使用哪种AOP方式，
- < aop:config/>->AspectJAwareAdvisorAutoProxyCreator
+< aop:config/>->AspectJAwareAdvisorAutoProxyCreator
 < aop:aspectj-autoproxy/>以及@EnableAspectJAutoProxy->AnnotationAwareAspectJAutoProxyCreator
 < tx:annotation-driven/>以及@EnableTransactionManagement-> InfrastructureAdvisorAutoProxyCreator
-其父类都是AbstractAutoProxyCreator
-所以代码将会进入到AbstractAutoProxyCreator.postProcessAfterInitialization
-其中wrapIfNecessary
+其父类都是AbstractAutoProxyCreator 所以代码将会进入到AbstractAutoProxyCreator.postProcessAfterInitialization 其中wrapIfNecessary
 这个方法非常重要，关于判断是否代理，创建AOP动态代理对象以及往黑名单map中添加如配置启动类等操作都在这里
 
 ```
@@ -417,7 +416,9 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 	}
 
 ```
+
 点进wrapIfNecessary，核心方法为getAdvicesAndAdvisorsForBean与createProxy
+
 ```
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
 	//  如果targetSourcedBeans缓存中包含该beanName，表示已通过TargetSource创建了代理，直接返回原始bean实例
@@ -457,17 +458,19 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 
 ```
 
-
-getAdvicesAndAdvisorsForBean
-这个方法就是返回该bean的advisors集合，前面说过advisors=pointCut+advice.简单的理解就是返回这个bean的哪个方法需要做哪些aop增强操作的集合。
+getAdvicesAndAdvisorsForBean 这个方法就是返回该bean的advisors集合，前面说过advisors=pointCut+advice.简单的理解就是返回这个bean的哪个方法需要做哪些aop增强操作的集合。
 大概流程如下：
+
 1. 查找现在所有为advisor的bean
 2. 过滤适合该bean的advisor
-  - 比如我们常用的execution切入点表达式是否满足
+
+- 比如我们常用的execution切入点表达式是否满足
+
 3. 添加一个特殊的Advisor到Advisors链头部
 4. 对advisors进行排序
- - 1.@order 越小的排在前面
- - 2.对于我们具体的通知，按照如下的排序方式（这个很重要，后续在具体调用的时候会使用）
+
+- 1.@order 越小的排在前面
+- 2.对于我们具体的通知，按照如下的排序方式（这个很重要，后续在具体调用的时候会使用）
 
 ```
 **ReflectiveAspectJAdvisorFactory**
@@ -485,8 +488,8 @@ getAdvicesAndAdvisorsForBean
 	}
 ```
 
-- createProxy 创建代理
- 将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
+- createProxy 创建代理 将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
+
 ```
 return proxyFactory.getProxy(getProxyClassLoader());
  
@@ -518,8 +521,9 @@ return proxyFactory.getProxy(getProxyClassLoader());
 
 
 ```
-最终产生的AOP动态代理对象，就会返回到最上级的方法上：
-AbstractBeanFactory.doGetBean
+
+最终产生的AOP动态代理对象，就会返回到最上级的方法上： AbstractBeanFactory.doGetBean
+
 ```
 
 sharedInstance = getSingleton(beanName, () -> {
@@ -533,8 +537,8 @@ getSingleton里面的
 singletonObject = singletonFactory.getObject();		（这个是一个function会触发createBean方法）				
 
 ```
-最后放进singletonObjects单例池中供getBean()获取。
-到此，整个AOP的生命周期过程结束。
+
+最后放进singletonObjects单例池中供getBean()获取。 到此，整个AOP的生命周期过程结束。
 
 ```
 --getBean
@@ -554,16 +558,188 @@ singletonObject = singletonFactory.getObject();		（这个是一个function会�
 
 ```
 
-总结：
-创建代理对象流程内嵌在bean的创建过程中，只因为我们在第一步解析标签生成的
-AutoProxyCreator是一个BeanPostProcessor,所以会做一个后置增强，去找到适配该bean的advisor并将具体属性（在什么方法上进行怎样的增强）
-给赋在最后的代理对象上，根据配置选择jdk 或者cglib增强创建代理对象，最后返回增强对象到单例池中
+总结： 创建代理对象流程内嵌在bean的创建过程中，只因为我们在第一步解析标签生成的
+AutoProxyCreator是一个BeanPostProcessor,所以会做一个后置增强，去找到适配该bean的advisor并将具体属性（在什么方法上进行怎样的增强） 给赋在最后的代理对象上，根据配置选择jdk
+或者cglib增强创建代理对象，最后返回增强对象到单例池中
 
+#### 代理的调用
 
+上述流程我们已经创建好了增强对象，在进行对象方法调用时，会根据jdk或者cglib方式进行增强方法的执行。
 
+##### jdk动态代理的调用
 
-#### 代理的使用
+大体流程:
 
 - 获取当前调用方法的拦截器链，包含了所有将要执行的advice。
 - 如果没有任何拦截器，直接执行目标方法。
-- 如果有拦截器存在，则将拦截器和目标方法封装成一个MethodInvocation，递归调用proceed方法进行调用。
+- 如果有拦截器存在，则将拦截器和目标方法封装成一个MethodInvocation，递归调用proceed方法进行调用。 核心方法在JdkDynamicAopProxy.invoke方法
+
+```
+//省去部分代码
+	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		MethodInvocation invocation;
+		Object oldProxy = null;
+		boolean setProxyContext = false;
+//原始对象
+		TargetSource targetSource = this.advised.targetSource;
+		Object target = null;
+			// Get the interception chain for this method.
+			//核心方法之一，上述流程所说的获取当前调用方法的拦截器链
+			List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
+
+			// Check whether we have any advice. If we don't, we can fallback on direct
+			// reflective invocation of the target, and avoid creating a MethodInvocation.
+			if (chain.isEmpty()) {
+				// We can skip creating a MethodInvocation: just invoke the target directly
+				// Note that the final invoker must be an InvokerInterceptor so we know it does
+				// nothing but a reflective operation on the target, and no hot swapping or fancy proxying.
+				Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
+				retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
+			}
+			else {
+				// We need to create a method invocation...
+				//将所有参数封装成MethodInvocation
+				invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
+				// Proceed to the joinpoint through the interceptor chain.
+				//最核心方法，增调对象的方法调用
+				retVal = invocation.proceed();
+			}
+
+```
+
+- getInterceptorsAndDynamicInterceptionAdvice 获取当前调用方法的拦截器链
+  在上述流程中我们虽然在代理对象中设置了所有的advisors，但是invoke方法是在方法维度的，要筛选出适合当前方法的advisor并且封装成interceptors。
+  比如userService有两个方法，update,create。你设置了在update方法的before aop,create方法的update aop，在userService bean创建阶段就有2个advisor.
+  但在具体的update方法执行就需要去找到属于自己的updateAdvisor（名字我随便起的，主要是表达这个意思），并且封装成spring的interceptors供后面proceed流程使用
+  getInterceptorsAndDynamicInterceptionAdvice点进去会进入到DefaultAdvisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice方法
+
+```
+public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
+			Advised config, Method method, @Nullable Class<?> targetClass) {
+
+		// This is somewhat tricky... We have to process introductions first,
+		// but we need to preserve order in the ultimate list.
+		List<Object> interceptorList = new ArrayList<>(config.getAdvisors().length);
+		Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
+		boolean hasIntroductions = hasMatchingIntroductions(config, actualClass);
+		AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
+   //config.getAdvisors就是上述所说的所有advisors。在这个方法进行筛选
+		for (Advisor advisor : config.getAdvisors()) {
+			if (advisor instanceof PointcutAdvisor) {
+				// Add it conditionally.
+				PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
+				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
+				//这里就是上述的将advisor转换为MethodInterceptor
+					MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
+					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
+					if (MethodMatchers.matches(mm, method, actualClass, hasIntroductions)) {
+						if (mm.isRuntime()) {
+							// Creating a new object instance in the getInterceptors() method
+							// isn't a problem as we normally cache created chains.
+							for (MethodInterceptor interceptor : interceptors) {
+								interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
+							}
+						}
+						else {
+							interceptorList.addAll(Arrays.asList(interceptors));
+						}
+					}
+				}
+			}
+			else if (advisor instanceof IntroductionAdvisor) {
+				IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
+				if (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) {
+					Interceptor[] interceptors = registry.getInterceptors(advisor);
+					interceptorList.addAll(Arrays.asList(interceptors));
+				}
+			}
+			else {
+				Interceptor[] interceptors = registry.getInterceptors(advisor);
+				interceptorList.addAll(Arrays.asList(interceptors));
+			}
+		}
+
+		return interceptorList;
+	}
+```
+- invocation.proceed()
+这里进行执行增强方法。基于责任链模式，按顺序递归的执行拦截器链中拦截器的invoke方法以及目标方法。
+所谓顺序，就是上述在创建代理对象时，获取advisors后的sort方法（ReflectiveAspectJAdvisorFactory的static快）。
+ 按照 Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class的方法去递归执行
+```
+	public Object proceed() throws Throwable {
+		//	We start with an index of -1 and increment early.
+		//最后执行，原始方法的调用。从-1开始每次+1。
+		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			return invokeJoinpoint();
+		}
+   //调用链就每次获取下一个
+		Object interceptorOrInterceptionAdvice =
+				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
+		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
+			// Evaluate dynamic method matcher here: static part will already have
+			// been evaluated and found to match.
+			InterceptorAndDynamicMethodMatcher dm =
+					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
+			if (dm.methodMatcher.matches(this.method, this.targetClass, this.arguments)) {
+				return dm.interceptor.invoke(this);
+			}
+			else {
+				// Dynamic matching failed.
+				// Skip this interceptor and invoke the next in the chain.
+				//递归调用
+				return proceed();
+			}
+		}
+		else {
+			// It's an interceptor, so we just invoke it: The pointcut will have
+			// been evaluated statically before this object was constructed.
+			//真正的方法调用，这个invoke方法中就有在目标方法前后的后增强的逻辑。
+			//这个this指的是当前的ReflectiveMethodInvocation对象
+			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
+		}
+	}
+
+```
+点击invoke方法，可以看到是MethodInterceptor接口的，有许多实现类。我们aop方式有
+Around, Before, After, AfterReturning, AfterThrowing。也就对应5种Interceptor
+具体说明
+```
+1. ExposeInvocationInterceptor
+对于AnnotationAwareAspectJAutoProxyCreator和AspectJAwareAdvisorAutoProxyCreator自动代理创建者，
+第一个拦截器就是ExposeInvocationInterceptor，它是在此前尝试创建代理对象的wrapIfNecessary方法中通过extendAdvisors扩展方法加入进去的。
+因此它也是第一个执行invoke方法的拦截器。
+该拦截器不属于通知方法的拦截器，主要目的是将当前MethodInvocation，
+也就是ReflectiveMethodInvocation对象设置到线程本地变量属性invocation中（暴露当前MethodInvocation），方便后续拦截器可以快速获取。
+
+public Object invoke(MethodInvocation mi) throws Throwable {
+		MethodInvocation oldInvocation = invocation.get();
+		invocation.set(mi);
+		try {
+			return mi.proceed();
+		}
+		finally {
+			invocation.set(oldInvocation);
+		}
+	}
+
+2.Around
+3.before->MethodBeforeAdviceInterceptor
+public Object invoke(MethodInvocation mi) throws Throwable {
+    //通过当前通知实例调用前置通知方法，此时目标方法未被执行
+    this.advice.before(mi.getMethod(), mi.getArguments(), mi.getThis());
+     //继续调用mi.proceed()
+    return mi.proceed();
+}
+4.after->
+5.afterReturning->AfterReturningAdviceInterceptor
+@Override
+public Object invoke(MethodInvocation mi) throws Throwable {
+    Object retVal = mi.proceed();
+     // 当递归方法返回时，说明目标方法已被执行，这是开始执行后置方法
+    this.advice.afterReturning(retVal, mi.getMethod(), mi.getArguments(), mi.getThis());
+    //返回默认就是目标方法的返回值
+    return retVal;
+}
+
+```
