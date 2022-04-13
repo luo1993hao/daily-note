@@ -62,6 +62,8 @@
 #### 解析标签，注册代理者
 ##### 标签解析
 **1. 注册parser (AopNamespaceHandler)**
+
+
 该流程发生在ioc容器启动的obtainFreshBeanFactory方法中，不熟悉ioc流程的同学可以理解为spring启动时候，在解析xml中的元素，并注册为Bean。（实际上是注册为BeanDefinition）
 这是在注册标签解析器，用于后续我们xml中标签的解析
 ```
@@ -74,9 +76,9 @@
 ```
 
 说明：
-< aop:scoped-proxy/>是作用域代理标签，用于装饰bean，改变其生命周期，将暴露出来的bean的生命周期控制在正确的范围类，用的比较少。
-< aop:config/>用于基于XML配置AOP
-< aop:aspectj-autoproxy/>用于基于XML开启AOP注解自动配置的支持，也就是支持@Aspect切面类及其内部的AOP注解
+- < aop:scoped-proxy/>是作用域代理标签，用于装饰bean，改变其生命周期，将暴露出来的bean的生命周期控制在正确的范围类，用的比较少。
+- < aop:config/>用于基于XML配置AOP
+- < aop:aspectj-autoproxy/>用于基于XML开启AOP注解自动配置的支持，也就是支持@Aspect切面类及其内部的AOP注解
 
 下面流程我们以常用的<aop:config>的方式来说明,xml中类似于
 ```
@@ -106,9 +108,12 @@
 ```
 
 **2. 配置自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）**
+
+
 当注册完标签解析器过后，会根据上述三种使用方式选择不同的解析器进行解析，（我们使用的是aop:config类型，所以将使用ConfigBeanDefinitionParser的解析方式）
 该方法做2类事情。
-1.配置自动代理对象，该对象就是专门用于后续创建AOP代理对象 2.解析标签，并将标签封装成为一个bean定义并且注册到IoC容器缓存中
+1. 配置自动代理对象，该对象就是专门用于后续创建AOP代理对象
+2. 解析标签，并将标签封装成为一个bean定义并且注册到IoC容器缓存中
 ```
 ...
  //注入或者升级代理创建者，类型为AspectJAwareAdvisorAutoProxyCreator。该bean的id为
@@ -208,11 +213,10 @@ pointcut/>标签封装成为一个bean定义并且注册到IoC容器缓存中 �
 - 解析advisor标签:parseAdvisor(elt, parserContext); 作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:
 advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
 关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。
--解析Aspect标签 ： parseAspect(elt, parserContext); 作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
-内部标签说明：
-- < aop:declare-parents/>
-- advice通知子标签，包括< aop:before/>、< aop:after/>、< aop:after-returning/>、< aop:after-throwing/>、< aop:around/>
-- 解析所有< aop:pointcut/>切入点子标签
+-解析Aspect标签 ： parseAspect(elt, parserContext); 作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义 内部标签说明：
+  - < aop:declare-parents/>
+  - advice通知子标签，包括< aop:before/>、< aop:after/>、< aop:after-returning/>、< aop:after-throwing/>、< aop:around/>
+  - 解析所有< aop:pointcut/>切入点子标签
 
 **当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义**
 
@@ -231,8 +235,12 @@ advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
   AnnotationAwareAspectJAutoProxyCreator.class 负责代理对象的创建。
 
 **3.1 注册AbstractAdvisorAutoProxyCreator**
+
+
   上文说到它继承于BeanPostProcessor,所以他的注册发生ioc容器启动的AbstractApplicationContext refresh流程中的registerBeanPostProcessors
 **3.2 创建代理对象**
+
+
   AbstractAdvisorAutoProxyCreator继承BeanPostProcessor，所以可以大胆猜测对代理对象的创建发生在bean初始化填充属性阶段，利于BeanPostProcessor的postProcessBeforeInitialization
   与postProcessAfterInitialization阶段进行代理对象的增强，而bean的创建都在AbstractApplicationContext refresh流程中，代理对象的增强发生在
   beanFactory.preInstantiateSingletons() 最后一步。随后点击getBean(),然后doGetBean()
@@ -427,9 +435,9 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 ```
 
 点进applyBeanPostProcessorsAfterInitialization，我们上述说了无论使用哪种AOP方式，
-< aop:config/>->AspectJAwareAdvisorAutoProxyCreator
-< aop:aspectj-autoproxy/>以及@EnableAspectJAutoProxy->AnnotationAwareAspectJAutoProxyCreator
-< tx:annotation-driven/>以及@EnableTransactionManagement-> InfrastructureAdvisorAutoProxyCreator
+- < aop:config/>->AspectJAwareAdvisorAutoProxyCreator
+- < aop:aspectj-autoproxy/>以及@EnableAspectJAutoProxy->AnnotationAwareAspectJAutoProxyCreator
+- < tx:annotation-driven/>以及@EnableTransactionManagement-> InfrastructureAdvisorAutoProxyCreator
 其父类都是AbstractAutoProxyCreator 所以代码将会进入到AbstractAutoProxyCreator.postProcessAfterInitialization 其中wrapIfNecessary
 这个方法非常重要，关于判断是否代理，创建AOP动态代理对象以及往黑名单map中添加如配置启动类等操作都在这里
 
@@ -493,14 +501,11 @@ getAdvicesAndAdvisorsForBean 这个方法就是返回该bean的advisors集合，
 
 1. 查找现在所有为advisor的bean
 2. 过滤适合该bean的advisor
-
-- 比如我们常用的execution切入点表达式是否满足
-
+  - 比如我们常用的execution切入点表达式是否满足
 3. 添加一个特殊的Advisor到Advisors链头部
 4. 对advisors进行排序
-
-- 1.@order 越小的排在前面
-- 2.对于我们具体的通知，按照如下的排序方式（这个很重要，后续在具体调用的时候会使用）
+  - @order 越小的排在前面
+  - 对于我们具体的通知，按照如下的排序方式（这个很重要，后续在具体调用的时候会使用）
 
 ```
 **ReflectiveAspectJAdvisorFactory**
@@ -518,7 +523,7 @@ getAdvicesAndAdvisorsForBean 这个方法就是返回该bean的advisors集合，
 	}
 ```
 
-- createProxy 创建代理 将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
+createProxy 创建代理 将advisors中各种通知以指定的时机织入到相应业务方法中，最终调用就会体现通知时机和通知方法。最终产生的AOP动态代理对象。核心代码就在该方法的最后一行。
 
 ```
 return proxyFactory.getProxy(getProxyClassLoader());
@@ -634,7 +639,7 @@ AutoProxyCreator是一个BeanPostProcessor,所以会做一个后置增强，去�
 
 ```
 
-- getInterceptorsAndDynamicInterceptionAdvice 获取当前调用方法的拦截器链
+**getInterceptorsAndDynamicInterceptionAdvice 获取当前调用方法的拦截器链**
   在上述流程中我们虽然在代理对象中设置了所有的advisors，但是invoke方法是在方法维度的，要筛选出适合当前方法的advisor并且封装成interceptors。
   比如userService有两个方法，update,create。你设置了在update方法的before aop,create方法的update aop，在userService bean创建阶段就有2个advisor.
   但在具体的update方法执行就需要去找到属于自己的updateAdvisor（名字我随便起的，主要是表达这个意思），并且封装成spring的interceptors供后面proceed流程使用
@@ -690,7 +695,7 @@ public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 	}
 ```
 
-- invocation.proceed()
+**invocation.proceed()**
   这里进行执行增强方法。基于责任链模式，按顺序递归的执行拦截器链中拦截器的invoke方法以及目标方法。
   所谓顺序，就是上述在创建代理对象时，获取advisors后的sort方法（ReflectiveAspectJAdvisorFactory的static快）。 按照 Around.class, Before.class,
   After.class, AfterReturning.class, AfterThrowing.class的方法去递归执行
@@ -812,9 +817,10 @@ public Object invoke(MethodInvocation mi) throws Throwable {
 ```
 
 ##### cglib动态代理的调用
-流程几乎一致，1.获取适合该方法的调用链
-2.封装成CglibMethodInvocation，这是ReflectiveMethodInvocation的子类 
-3.调用CglibMethodInvocation的proceed方法
+流程几乎一致
+1. 获取适合该方法的调用链
+2. 封装成CglibMethodInvocation，这是ReflectiveMethodInvocation的子类 
+3. 调用CglibMethodInvocation的proceed方法
 ```
 	@Nullable
 		public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
