@@ -58,13 +58,12 @@
 3. 代理对象方法调用时候，通过JDK或者CGLIB进行增强调用
 
 ### 详细流程
-
+我们以xml的方式来说明流程
 #### 解析标签，注册代理者
-
 ##### 标签解析
-
-1. 注册parser (AopNamespaceHandler)
-
+**1. 注册parser (AopNamespaceHandler)**
+该流程发生在ioc容器启动的obtainFreshBeanFactory方法中，不熟悉ioc流程的同学可以理解为spring启动时候，在解析xml中的元素，并注册为Bean。（实际上是注册为BeanDefinition）
+这是在注册标签解析器，用于后续我们xml中标签的解析
 ```
 		// In 2.0 XSD as well as in 2.1 XSD.
 		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
@@ -76,11 +75,40 @@
 
 说明：
 < aop:scoped-proxy/>是作用域代理标签，用于装饰bean，改变其生命周期，将暴露出来的bean的生命周期控制在正确的范围类，用的比较少。
-< aop:config/>用于基于XML配置AOP，
+< aop:config/>用于基于XML配置AOP
 < aop:aspectj-autoproxy/>用于基于XML开启AOP注解自动配置的支持，也就是支持@Aspect切面类及其内部的AOP注解
 
-2. 配置自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）
+下面流程我们以常用的<aop:config>的方式来说明,xml中类似于
+```
+   <aop:config>
+        <!--下面这两个 Pointcut 是全局的，可以被所有的 Aspect 使用-->
+        <!--这里示意了两种 Pointcut 配置-->
+        <aop:pointcut id="logArgsPointcut" expression="execution(* com.javadoop.springaoplearning.service.*.*(..))" />
+        <aop:pointcut id="logResultPointcut" expression="com.javadoop.springaoplearning.aop_spring_2_schema_based.SystemArchitecture.businessService()" />
 
+        <aop:aspect ref="logArgsAspect">
+            <!--在这里也可以定义 Pointcut，不过这是局部的，不能被其他的 Aspect 使用-->
+            <aop:pointcut id="internalPointcut"
+                          expression="com.javadoop.springaoplearning.aop_spring_2_schema_based.SystemArchitecture.businessService()" />
+            <aop:before method="logArgs" pointcut-ref="internalPointcut" />
+        </aop:aspect>
+
+        <aop:aspect ref="logArgsAspect">
+            <aop:before method="logArgs" pointcut-ref="logArgsPointcut" />
+        </aop:aspect>
+
+        <aop:aspect ref="logResultAspect">
+            <aop:after-returning method="logResult" returning="result" pointcut-ref="logResultPointcut" />
+        </aop:aspect>
+
+
+    </aop:config>
+```
+
+**2. 配置自动代理对象以及标签解析（ConfigBeanDefinitionParser.parse）**
+当注册完标签解析器过后，会根据上述三种使用方式选择不同的解析器进行解析，（我们使用的是aop:config类型，所以将使用ConfigBeanDefinitionParser的解析方式）
+该方法做2类事情。
+1.配置自动代理对象，该对象就是专门用于后续创建AOP代理对象 2.解析标签，并将标签封装成为一个bean定义并且注册到IoC容器缓存中
 ```
 ...
  //注入或者升级代理创建者，类型为AspectJAwareAdvisorAutoProxyCreator。该bean的id为
@@ -175,21 +203,20 @@
 </aop:config>
 ```
 
-2.2.1 解析pointCut标签    :    parsePointcut(elt, parserContext); 作用：parsePointcut方法用于解析< aop:pointcut/>切入点标签，并将一个< aop:
+- 解析pointCut标签 : parsePointcut(elt, parserContext); 作用：parsePointcut方法用于解析< aop:pointcut/>切入点标签，并将一个< aop:
 pointcut/>标签封装成为一个bean定义并且注册到IoC容器缓存中 关键字：RootBeanDefinition，beanClass类型为AspectJExpressionPointcut。随后以id作为beanName 2.2.2
-解析advisor标签:    parseAdvisor(elt, parserContext); 作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:
+- 解析advisor标签:parseAdvisor(elt, parserContext); 作用：parseAdvisor方法用于解析< aop:advisor/>通知器标签，并将一个aop:
 advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
-关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。 2.2.3
-解析Aspect标签 ： parseAspect(elt, parserContext); 作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
+关键字：RootBeanDefinition，beanClass类型为DefaultBeanFactoryPointcutAdvisor。以id作为beanName或者自动生成beanName，最后注册到容器中。
+-解析Aspect标签 ： parseAspect(elt, parserContext); 作用：parseAspect用于解析< aop:aspect/>内部标签。< aop:aspect/>标签本身并不会被注册成为一个bean定义
 内部标签说明：
-
 - < aop:declare-parents/>
 - advice通知子标签，包括< aop:before/>、< aop:after/>、< aop:after-returning/>、< aop:after-throwing/>、< aop:around/>
 - 解析所有< aop:pointcut/>切入点子标签
 
-当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义
+**当前全部标签解析完毕，仅仅是向容器中注册了一些bean定义**
 
-#### 创建代理对象
+#### 3.创建代理对象
 
 - 筛选出所有适合当前Bean的通知器，也就是所有的Advisor、Advise、Interceptor。
 - 选择使用JDK还是CGLIB来进行创建代理。
@@ -201,8 +228,11 @@ advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
   标签或者@EnableTransactionManagement事物注解，第二步配置的AbstractAdvisorAutoProxyCreator=InfrastructureAdvisorAutoProxyCreator.
 - < aop:config />标签，AbstractAdvisorAutoProxyCreator=AspectJAwareAdvisorAutoProxyCreator
 - < aop:aspectj-autoproxy />标签或者@EnableAspectJAutoProxy注解，AbstractAdvisorAutoProxyCreator=
-  AnnotationAwareAspectJAutoProxyCreator.class 负责代理对象的创建。 3.1 注册AbstractAdvisorAutoProxyCreator
-  上文说到它继承于BeanPostProcessor,所以他的注册发生ioc容器启动的AbstractApplicationContext refresh流程中的registerBeanPostProcessors 3.2 创建代理对象
+  AnnotationAwareAspectJAutoProxyCreator.class 负责代理对象的创建。
+
+**3.1 注册AbstractAdvisorAutoProxyCreator**
+  上文说到它继承于BeanPostProcessor,所以他的注册发生ioc容器启动的AbstractApplicationContext refresh流程中的registerBeanPostProcessors
+**3.2 创建代理对象**
   AbstractAdvisorAutoProxyCreator继承BeanPostProcessor，所以可以大胆猜测对代理对象的创建发生在bean初始化填充属性阶段，利于BeanPostProcessor的postProcessBeforeInitialization
   与postProcessAfterInitialization阶段进行代理对象的增强，而bean的创建都在AbstractApplicationContext refresh流程中，代理对象的增强发生在
   beanFactory.preInstantiateSingletons() 最后一步。随后点击getBean(),然后doGetBean()
@@ -296,7 +326,7 @@ protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable O
 
 ```
 
-3.2.1 applyBeanPostProcessorsBeforeInstantiation 点进去会走到AbstractAutoProxyCreator.postProcessBeforeInstantiation
+ applyBeanPostProcessorsBeforeInstantiation 点进去会走到AbstractAutoProxyCreator.postProcessBeforeInstantiation
 
 ```
 //这个方法基本都会返回null，所以上述流程的applyBeanPostProcessorsAfterInitialization 也不会执行
@@ -564,15 +594,12 @@ AutoProxyCreator是一个BeanPostProcessor,所以会做一个后置增强，去�
 
 #### 代理的调用
 
-上述流程我们已经创建好了增强对象，在进行对象方法调用时，会根据jdk或者cglib方式进行增强方法的执行。
-
-##### jdk动态代理的调用
-
-大体流程:
-
+上述流程我们已经创建好了增强对象，在进行对象方法调用时，会根据jdk或者cglib方式进行增强方法的执行。无论是哪种方式，流程都是大同小异
 - 获取当前调用方法的拦截器链，包含了所有将要执行的advice。
 - 如果没有任何拦截器，直接执行目标方法。
-- 如果有拦截器存在，则将拦截器和目标方法封装成一个MethodInvocation，递归调用proceed方法进行调用。 核心方法在JdkDynamicAopProxy.invoke方法
+- 如果有拦截器存在，则将拦截器和目标方法封装成一个MethodInvocation，递归调用proceed方法进行调用。
+##### jdk动态代理的调用
+核心方法在JdkDynamicAopProxy.invoke方法
 
 ```
 //省去部分代码
@@ -662,10 +689,12 @@ public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 		return interceptorList;
 	}
 ```
+
 - invocation.proceed()
-这里进行执行增强方法。基于责任链模式，按顺序递归的执行拦截器链中拦截器的invoke方法以及目标方法。
-所谓顺序，就是上述在创建代理对象时，获取advisors后的sort方法（ReflectiveAspectJAdvisorFactory的static快）。
- 按照 Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class的方法去递归执行
+  这里进行执行增强方法。基于责任链模式，按顺序递归的执行拦截器链中拦截器的invoke方法以及目标方法。
+  所谓顺序，就是上述在创建代理对象时，获取advisors后的sort方法（ReflectiveAspectJAdvisorFactory的static快）。 按照 Around.class, Before.class,
+  After.class, AfterReturning.class, AfterThrowing.class的方法去递归执行
+
 ```
 	public Object proceed() throws Throwable {
 		//	We start with an index of -1 and increment early.
@@ -701,9 +730,10 @@ public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 	}
 
 ```
-点击invoke方法，可以看到是MethodInterceptor接口的，有许多实现类。我们aop方式有
-Around, Before, After, AfterReturning, AfterThrowing。也就对应5种Interceptor
-具体说明
+
+点击invoke方法，可以看到是MethodInterceptor接口的，有许多实现类。我们aop方式有 Around, Before, After, AfterReturning,
+AfterThrowing。也就对应5种Interceptor 具体说明
+
 ```
 1. ExposeInvocationInterceptor
 对于AnnotationAwareAspectJAutoProxyCreator和AspectJAwareAdvisorAutoProxyCreator自动代理创建者，
@@ -723,7 +753,21 @@ public Object invoke(MethodInvocation mi) throws Throwable {
 		}
 	}
 
-2.Around
+2.Around->AspectJAroundAdvice
+invoke方法内部并没有直接调用MethodInvocation的proceed()方法，而是将MethodInvocation包装成为一个ProceedingJoinPoint，作为环绕通知的参数给使用者。然后使用者在通知方法中可以调用ProceedingJoinPoint的proceed()方法，
+其内部还是调用被包装的MethodInvocation的proceed()方法，这样就将递归调用正常延续了下去。
+	@Override
+	public Object invoke(MethodInvocation mi) throws Throwable {
+		if (!(mi instanceof ProxyMethodInvocation)) {
+			throw new IllegalStateException("MethodInvocation is not a Spring ProxyMethodInvocation: " + mi);
+		}
+		ProxyMethodInvocation pmi = (ProxyMethodInvocation) mi;
+		ProceedingJoinPoint pjp = lazyGetProceedingJoinPoint(pmi);
+		JoinPointMatch jpm = getJoinPointMatch(pmi);
+		//我们自己写around的的时候会手动调用process方法
+		return invokeAdviceMethod(pjp, jpm, null, null);
+	}
+	
 3.before->MethodBeforeAdviceInterceptor
 public Object invoke(MethodInvocation mi) throws Throwable {
     //通过当前通知实例调用前置通知方法，此时目标方法未被执行
@@ -731,15 +775,80 @@ public Object invoke(MethodInvocation mi) throws Throwable {
      //继续调用mi.proceed()
     return mi.proceed();
 }
-4.after->
+4.after->AspectJAfterAdvice
+public Object invoke(MethodInvocation mi) throws Throwable {
+		try {
+			return mi.proceed();
+		}
+		finally {
+		//finally保证了@after逻辑无论如何都会执行
+			invokeAdviceMethod(getJoinPointMatch(), null, null);
+		}
+	}
 5.afterReturning->AfterReturningAdviceInterceptor
 @Override
 public Object invoke(MethodInvocation mi) throws Throwable {
     Object retVal = mi.proceed();
-     // 当递归方法返回时，说明目标方法已被执行，这是开始执行后置方法
+     // 当递归方法返回时，如果上面的方法抛出了异常，下面这行代码就不会执行
+     //说明目标方法已被执行，这是开始执行后置方法
     this.advice.afterReturning(retVal, mi.getMethod(), mi.getArguments(), mi.getThis());
     //返回默认就是目标方法的返回值
     return retVal;
 }
+6. afterThrowing->AspectJAfterThrowingAdvice
+   @Override
+	public Object invoke(MethodInvocation mi) throws Throwable {
+		try {
+			return mi.proceed();
+		}
+		catch (Throwable ex) {
+		//如果抛出的异常类型和当前通知方法参数需要的异常类型匹配，那么可以调用当前通知方法，否则不会调用
+			if (shouldInvokeOnThrowing(ex)) {
+				invokeAdviceMethod(getJoinPointMatch(), null, ex);
+			}
+			throw ex;
+		}
+	}
+```
 
+##### cglib动态代理的调用
+流程几乎一致，1.获取适合该方法的调用链
+2.封装成CglibMethodInvocation，这是ReflectiveMethodInvocation的子类 
+3.调用CglibMethodInvocation的proceed方法
+```
+	@Nullable
+		public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+			Object oldProxy = null;
+			boolean setProxyContext = false;
+			Object target = null;
+			TargetSource targetSource = this.advised.getTargetSource();
+			try {
+				if (this.advised.exposeProxy) {
+					// Make invocation available if necessary.
+					oldProxy = AopContext.setCurrentProxy(proxy);
+					setProxyContext = true;
+				}
+				// Get as late as possible to minimize the time we "own" the target, in case it comes from a pool...
+				target = targetSource.getTarget();
+				Class<?> targetClass = (target != null ? target.getClass() : null);
+				List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
+				Object retVal;
+				// Check whether we only have one InvokerInterceptor: that is,
+				// no real advice, but just reflective invocation of the target.
+				if (chain.isEmpty() && Modifier.isPublic(method.getModifiers())) {
+					// We can skip creating a MethodInvocation: just invoke the target directly.
+					// Note that the final invoker must be an InvokerInterceptor, so we know
+					// it does nothing but a reflective operation on the target, and no hot
+					// swapping or fancy proxying.
+					Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
+					retVal = methodProxy.invoke(target, argsToUse);
+				}
+				else {
+					// We need to create a method invocation...
+					retVal = new CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy).proceed();
+				}
+				retVal = processReturnType(proxy, target, method, retVal);
+				return retVal;
+			}
+		
 ```
