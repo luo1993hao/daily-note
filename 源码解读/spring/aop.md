@@ -238,6 +238,8 @@ advisor/标签封装成为一个bean定义并且注册到IoC容器缓存中：
 
 
   上文说到它继承于BeanPostProcessor,所以他的注册发生ioc容器启动的AbstractApplicationContext refresh流程中的registerBeanPostProcessors
+
+
 **3.2 创建代理对象**
 
 
@@ -305,7 +307,7 @@ protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable O
 
 ```
 
-3.2.1 resolveBeforeInstantiation
+resolveBeforeInstantiation
 点进resolveBeforeInstantiation方法，核心方法就是applyBeanPostProcessorsBeforeInstantiation与applyBeanPostProcessorsAfterInitialization，
 其中applyBeanPostProcessorsBeforeInstantiation
 
@@ -391,7 +393,7 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 
 ```
 
-3.2.2 创建bean 点进doCreateBean,核心方法是initializeBean
+ 创建bean 点进doCreateBean,核心方法是initializeBean
 
 ```
 	protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, final @Nullable Object[] args)
